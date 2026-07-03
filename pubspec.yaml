@@ -1,0 +1,68 @@
+name: nudge
+description: "Nudge — ADHD Habit Tracker & Focus"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # State Management
+  get: ^4.6.6
+
+  # Data & Storage
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  path_provider: ^2.1.1
+  shared_preferences: ^2.2.2
+  supabase_flutter: ^2.0.2
+
+  # Subscriptions
+  purchases_flutter: ^10.3.0
+
+  # Notifications
+  firebase_core: ^4.11.0
+  firebase_messaging: ^16.4.1
+  flutter_local_notifications: ^22.0.1
+  timezone: ^0.11.1
+
+  # Utilities
+  uuid: ^4.4.0
+  intl: ^0.20.3
+  http: ^1.1.0
+  url_launcher: ^6.2.2
+  package_info_plus: ^10.2.0
+  flutter_secure_storage: ^10.3.1
+  speech_to_text: ^7.4.0
+  screenshot: ^3.0.0
+  share_plus: ^13.2.0
+
+  # UI & Animations
+  flutter_animate: ^4.5.0
+  confetti: ^0.8.0
+  lottie: ^3.1.2
+  fl_chart: ^1.2.0
+  table_calendar: ^3.0.9
+  google_fonts: ^8.1.0
+  firebase_auth: ^6.5.4
+  google_sign_in: ^7.2.0
+  cloud_firestore: ^6.6.0
+  google_generative_ai: ^0.4.7
+  posthog_flutter: ^5.28.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/animations/
+    - assets/images/
+    - assets/icons/
+    - assets/sounds/

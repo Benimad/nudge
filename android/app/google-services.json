@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "345123252542",
+    "project_id": "gen-lang-client-0020138286",
+    "storage_bucket": "gen-lang-client-0020138286.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:345123252542:android:2f3575687acdd90a31646f",
+        "android_client_info": {
+          "package_name": "com.app.nudge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "345123252542-cfem1i4phmq0he43i70mk4ct37r8e4vo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.nudge",
+            "certificate_hash": "09200157bd72ecc6ef9e2664a05447a88c9545fc"
+          }
+        },
+        {
+          "client_id": "345123252542-ch4t3bcajng9np2bdjisvc05j0heoin9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBK0krzxEE8cGhnXQvh0jgCXt6uKMMZSFs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "345123252542-ch4t3bcajng9np2bdjisvc05j0heoin9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
