@@ -76,7 +76,7 @@ class AiCoachScreen extends StatelessWidget {
                                   const Text('💥', style: TextStyle(fontSize: 10)),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Claude-powered',
+                                    'AI-powered',
                                     style: TextStyle(
                                       color: context.colors.primary,
                                       fontSize: 10,

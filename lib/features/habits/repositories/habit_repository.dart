@@ -173,4 +173,12 @@ class HabitRepository {
     final result = await db.rawQuery('SELECT COUNT(*) as count FROM completions');
     return Sqflite.firstIntValue(result) ?? 0;
   }
+
+  /// All completions ever recorded, in one query. Used by StatsController to
+  /// compute rates/streaks/insights in memory instead of one DB query per day.
+  Future<List<CompletionModel>> getAllCompletions() async {
+    final db = await _dbHelper.database;
+    final maps = await db.query('completions');
+    return maps.map((m) => CompletionModel.fromMap(m)).toList();
+  }
 }

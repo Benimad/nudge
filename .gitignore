@@ -39,6 +39,11 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Secrets — never commit hardcoded keys
+*_secrets.dart
+*.env
+.env*
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile

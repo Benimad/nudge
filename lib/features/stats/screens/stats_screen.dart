@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../ai_coach/controllers/chat_controller.dart';
-import '../../habits/controllers/home_controller.dart';
-import '../../habits/repositories/habit_repository.dart';
+import '../controllers/stats_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/brain_mascot.dart';
 
@@ -15,114 +13,17 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  final HabitRepository _repository = HabitRepository();
-  late Future<Map<String, dynamic>> _overallStatsFuture;
-  late Future<Map<String, dynamic>> _chartFuture;
-  String _aiInsight = '';
-  String _selectedTimeRange = 'Week';
-
-  static const List<String> _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  static const List<String> _monthLabels = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _overallStatsFuture = _fetchOverallStats();
-    _chartFuture = _fetchChartData(_selectedTimeRange);
-    _loadAiInsight();
-  }
-
-  /// Metrics that describe overall/current-week standing regardless of which
-  /// chart range is selected — these never change when the toggle is tapped.
-  Future<Map<String, dynamic>> _fetchOverallStats() async {
-    final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday - 1));
-    final weekFutures = List.generate(7, (i) => _repository.getCompletionRateForDate(monday.add(Duration(days: i))));
-
-    final weekData = await Future.wait(weekFutures);
-    final totalWins = await _repository.getTotalWins();
-    final bestStreak = await _getBestStreak();
-    final weekCompletion = weekData.reduce((a, b) => a + b) / weekData.length;
-
-    return {'weekCompletion': weekCompletion, 'totalWins': totalWins, 'bestStreak': bestStreak};
-  }
-
-  /// Chart data + x-axis labels for the selected time range. Week shows 7
-  /// daily rates; Month buckets the last 4 weeks; 3 Months/Year bucket by
-  /// calendar month.
-  Future<Map<String, dynamic>> _fetchChartData(String range) async {
-    final now = DateTime.now();
-
-    if (range == 'Month') {
-      final data = <double>[];
-      for (int i = 3; i >= 0; i--) {
-        final bucketEnd = now.subtract(Duration(days: i * 7));
-        final bucketStart = bucketEnd.subtract(const Duration(days: 6));
-        data.add(await _repository.getAverageCompletionRateForRange(bucketStart, bucketEnd));
-      }
-      return {'data': data, 'labels': ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4']};
-    }
-
-    if (range == '3 Months' || range == 'Year') {
-      final monthCount = range == 'Year' ? 12 : 3;
-      final data = <double>[];
-      final labels = <String>[];
-      for (int i = monthCount - 1; i >= 0; i--) {
-        final monthDate = DateTime(now.year, now.month - i, 1);
-        final monthStart = DateTime(monthDate.year, monthDate.month, 1);
-        final monthEnd = DateTime(monthDate.year, monthDate.month + 1, 0);
-        data.add(await _repository.getAverageCompletionRateForRange(monthStart, monthEnd));
-        labels.add(_monthLabels[monthDate.month - 1]);
-      }
-      return {'data': data, 'labels': labels};
-    }
-
-    // Week (default)
-    final monday = now.subtract(Duration(days: now.weekday - 1));
-    final weekFutures = List.generate(7, (i) => _repository.getCompletionRateForDate(monday.add(Duration(days: i))));
-    final data = await Future.wait(weekFutures);
-    return {'data': data, 'labels': _weekdayLabels};
-  }
-
-  Future<int> _getBestStreak() async {
-    final habitsResult = await _repository.getAllHabits();
-    if (!habitsResult.isSuccess || habitsResult.data!.isEmpty) return 0;
-    int best = 0;
-    final streakFutures = habitsResult.data!.map((h) => _repository.getStreakForHabit(h.id));
-    final streaks = await Future.wait(streakFutures);
-    for (final s in streaks) {
-      if (s > best) best = s;
-    }
-    return best;
-  }
-
-  Future<void> _loadAiInsight() async {
-    final controller = Get.find<HomeController>();
-    final stats = {
-      'completion_rate': controller.todayProgress.value,
-      'best_day': 'unknown',
-      'streak': 0,
-      'improvement': 0.0,
-    };
-    final insight = Get.find<ChatController>().getWeeklyInsight(stats);
-    if (mounted) {
-      setState(() => _aiInsight = insight);
-    }
-  }
+  final StatsController controller = Get.put(StatsController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.colors.background,
       body: SafeArea(
-        child: FutureBuilder(
-          future: _overallStatsFuture,
-          builder: (context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
-            final totalWins = (snapshot.data?['totalWins'] as int?) ?? 0;
-            final bestStreak = (snapshot.data?['bestStreak'] as int?) ?? 0;
-            final weekCompletion = (snapshot.data?['weekCompletion'] as double?) ?? 0.0;
+        child: Obx(() {
+            final totalWins = controller.totalWins.value;
+            final bestStreak = controller.bestStreak.value;
+            final weekCompletion = controller.weekCompletion.value;
 
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -228,7 +129,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Habits completed — $_selectedTimeRange',
+                          'Habits completed — ${controller.selectedTimeRange.value}',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -237,17 +138,14 @@ class _StatsScreenState extends State<StatsScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        FutureBuilder<Map<String, dynamic>>(
-                          future: _chartFuture,
-                          builder: (context, chartSnapshot) {
-                            final data = (chartSnapshot.data?['data'] as List<double>?) ?? const [];
-                            final labels = (chartSnapshot.data?['labels'] as List<String>?) ?? const [];
-                            if (data.isEmpty) {
-                              return const SizedBox(height: 180);
-                            }
-                            return _buildWeeklyChart(context, data, labels);
-                          },
-                        ),
+                        Builder(builder: (context) {
+                          final data = controller.chartData;
+                          final labels = controller.chartLabels;
+                          if (data.isEmpty) {
+                            return const SizedBox(height: 180);
+                          }
+                          return _buildWeeklyChart(context, data, labels);
+                        }),
                         const SizedBox(height: 16),
 
                         // Legend
@@ -265,13 +163,10 @@ class _StatsScreenState extends State<StatsScreen> {
                         // Time range toggle
                         Row(
                           children: ['Week', 'Month', '3 Months', 'Year'].map((range) {
-                            final isSelected = range == _selectedTimeRange;
+                            final isSelected = range == controller.selectedTimeRange.value;
                             return Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() {
-                                  _selectedTimeRange = range;
-                                  _chartFuture = _fetchChartData(range);
-                                }),
+                                onTap: () => controller.setTimeRange(range),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 8),
                                   decoration: BoxDecoration(
@@ -306,8 +201,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 ],
               ),
             );
-          },
-        ),
+        }),
       ),
     );
   }
@@ -520,12 +414,17 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               ),
               const Spacer(),
-              Icon(Icons.auto_awesome, color: context.colors.primary, size: 20),
+              GestureDetector(
+                onTap: controller.refreshInsight,
+                child: Icon(Icons.refresh_rounded, color: context.colors.primary, size: 20),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            _aiInsight.isNotEmpty ? _aiInsight : 'You complete 2x more habits on Wednesdays compared to your weekend average. That midweek momentum is your superpower.',
+            controller.aiInsight.value.isNotEmpty
+                ? controller.aiInsight.value
+                : 'You complete 2x more habits on Wednesdays compared to your weekend average. That midweek momentum is your superpower.',
             style: TextStyle(
               fontSize: 15,
               color: context.colors.text,

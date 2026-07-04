@@ -41,6 +41,30 @@ class HabitModel {
     };
   }
 
+  HabitModel copyWith({
+    String? name,
+    String? timeOfDay,
+    String? reminderStyle,
+    bool? isActive,
+    String? color,
+    String? emoji,
+    bool? aiBreakdownEnabled,
+    int? habitOrder,
+  }) {
+    return HabitModel(
+      id: id,
+      name: name ?? this.name,
+      timeOfDay: timeOfDay ?? this.timeOfDay,
+      reminderStyle: reminderStyle ?? this.reminderStyle,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt,
+      color: color ?? this.color,
+      emoji: emoji ?? this.emoji,
+      aiBreakdownEnabled: aiBreakdownEnabled ?? this.aiBreakdownEnabled,
+      habitOrder: habitOrder ?? this.habitOrder,
+    );
+  }
+
   factory HabitModel.fromMap(Map<String, dynamic> map) {
     return HabitModel(
       id: map['id'],

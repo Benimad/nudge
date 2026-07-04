@@ -6,12 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/notifications/notification_service.dart';
-import '../../habits/controllers/home_controller.dart';
 import '../services/subscription_service.dart';
-import '../../../shared/widgets/brain_mascot.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -89,6 +89,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed == true) {
       await _deleteAllData();
     }
+  }
+
+  Future<void> _openHelpAndSupport() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'support@nudgeapp.co',
+      query: 'subject=${Uri.encodeComponent('Nudge Feedback')}',
+    );
+    if (!await launchUrl(uri)) {
+      if (mounted) {
+        Get.snackbar(
+          'Couldn\'t open email',
+          'Reach us at support@nudgeapp.co',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    }
+  }
+
+  void _showBackupInfo() {
+    final signedIn = FirebaseAuth.instance.currentUser?.isAnonymous == false;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Backup & restore'),
+        content: Text(
+          signedIn
+              ? 'Your habits and progress sync automatically to the cloud as you use the app. Reinstalling and signing in with the same account restores your data.'
+              : 'Sign in with Google to back up your habits and progress automatically, so you can restore them on a new device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAboutDialog() {
@@ -306,9 +344,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _buildActionLink(context, 'Export my data', Icons.file_download_outlined, _exportData),
                   Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
-                  _buildActionLink(context, 'Backup & restore', Icons.cloud_outlined, () {}),
+                  _buildActionLink(context, 'Backup & restore', Icons.cloud_outlined, _showBackupInfo),
                   Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
-                  _buildActionLink(context, 'Help & support', Icons.help_outline_rounded, () {}),
+                  _buildActionLink(context, 'Help & support', Icons.help_outline_rounded, _openHelpAndSupport),
                   Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
                   _buildActionLink(context, 'About Nudge', Icons.info_outline_rounded, _showAboutDialog),
                 ],
