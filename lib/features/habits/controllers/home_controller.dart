@@ -8,6 +8,7 @@ import '../models/completion_model.dart';
 import '../repositories/habit_repository.dart';
 import '../screens/celebration_screen.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../core/services/firestore_service.dart';
 import '../../settings/services/subscription_service.dart';
 import '../../../core/notifications/notification_service.dart';
 
@@ -44,6 +45,13 @@ class HomeController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
     userName.value = prefs.getString('user_name') ?? 'Friend';
     dopaminePoints.value = prefs.getInt('dopamine_points') ?? 0;
+  }
+
+  /// Checked fresh (not cached) before every Firestore write so a toggle
+  /// flipped in Settings takes effect immediately, no restart needed.
+  Future<bool> _isOfflineMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('offline_mode') ?? false;
   }
 
   Future<void> refreshData() async {
@@ -113,6 +121,9 @@ class HomeController extends GetxController {
       _calculateProgress();
       // Schedule reminder if applicable
       await _scheduleReminderIfNeeded(habit);
+      if (!await _isOfflineMode()) {
+        unawaited(FirestoreService().upsertHabit(habit));
+      }
     } else {
       Get.snackbar('Error', 'Failed to create habit', snackPosition: SnackPosition.BOTTOM);
     }
@@ -148,6 +159,11 @@ class HomeController extends GetxController {
       if (index >= 0) {
         habits[index] = habit;
       }
+      // Re-schedule with the (possibly changed) time-of-day / reminder style.
+      await _scheduleReminderIfNeeded(habit);
+      if (!await _isOfflineMode()) {
+        unawaited(FirestoreService().upsertHabit(habit));
+      }
     } else {
       Get.snackbar('Error', 'Failed to update habit', snackPosition: SnackPosition.BOTTOM);
     }
@@ -160,6 +176,10 @@ class HomeController extends GetxController {
       completions.remove(id);
       streaks.remove(id);
       _calculateProgress();
+      await NotificationService().cancelHabitNotifications(id);
+      if (!await _isOfflineMode()) {
+        unawaited(FirestoreService().deleteHabit(id));
+      }
     } else {
       Get.snackbar('Error', 'Failed to delete habit', snackPosition: SnackPosition.BOTTOM);
     }
@@ -168,7 +188,7 @@ class HomeController extends GetxController {
   final _lastToggle = <String, DateTime>{};
 
   Future<void> toggleHabit(HabitModel habit) async {
-    _resetParalysisTimer();
+    resetParalysisTimer();
 
     // Debounce rapid repeat taps on the same habit (spec: 500ms).
     final now = DateTime.now();
@@ -196,6 +216,10 @@ class HomeController extends GetxController {
       } else {
         final newStreak = await _repository.getStreakForHabit(habit.id);
         streaks[habit.id] = newStreak;
+        if (!await _isOfflineMode()) {
+          unawaited(FirestoreService().deleteCompletion(habit.id, DateTime.now()));
+          unawaited(FirestoreService().updateDopaminePoints(dopaminePoints.value));
+        }
       }
       return;
     }
@@ -233,6 +257,10 @@ class HomeController extends GetxController {
     // Update cached streak for this habit only (no full reload).
     final newStreak = await _repository.getStreakForHabit(habit.id);
     streaks[habit.id] = newStreak;
+    if (!await _isOfflineMode()) {
+      unawaited(FirestoreService().recordCompletion(habit.id, DateTime.now()));
+      unawaited(FirestoreService().updateDopaminePoints(dopaminePoints.value));
+    }
 
     // Trigger dopamine celebration
     Get.to(() => CelebrationScreen(streak: newStreak), fullscreenDialog: true);
@@ -243,6 +271,9 @@ class HomeController extends GetxController {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt('dopamine_points', dopaminePoints.value);
     });
+    unawaited(_isOfflineMode().then((offline) {
+      if (!offline) FirestoreService().updateDopaminePoints(dopaminePoints.value);
+    }));
   }
 
   void _initParalysisDetection() {
@@ -262,7 +293,11 @@ class HomeController extends GetxController {
     });
   }
 
-  void _resetParalysisTimer() {
+  /// Marks the user as active, resetting the paralysis-mode inactivity clock.
+  /// Called both from habit interactions and from a global tap/scroll
+  /// listener (see main.dart) so navigating or scrolling anywhere in the app
+  /// also counts as activity, not just checking off a habit.
+  void resetParalysisTimer() {
     _lastActivityTime.value = DateTime.now();
     showParalysisBanner.value = false;
   }

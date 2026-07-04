@@ -27,7 +27,7 @@ class AiCoachScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: ProGate(
           featureName: 'AI Coach',
@@ -44,8 +44,8 @@ class AiCoachScreen extends StatelessWidget {
                         Container(
                           width: 44,
                           height: 44,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.primaryColor,
+                          decoration: BoxDecoration(
+                            color: context.colors.primary,
                             shape: BoxShape.circle,
                           ),
                           child: const BrainMascot(size: 28),
@@ -54,12 +54,12 @@ class AiCoachScreen extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'AI Coach',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.textColor,
+                                color: context.colors.text,
                                 fontFamily: 'Inter',
                                 letterSpacing: -0.5,
                               ),
@@ -68,17 +68,17 @@ class AiCoachScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F1FC),
+                                color: context.colors.iconBubble,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
-                                children: const [
-                                  Text('💥', style: TextStyle(fontSize: 10)),
-                                  SizedBox(width: 4),
+                                children: [
+                                  const Text('💥', style: TextStyle(fontSize: 10)),
+                                  const SizedBox(width: 4),
                                   Text(
                                     'Claude-powered',
                                     style: TextStyle(
-                                      color: AppTheme.primaryColor,
+                                      color: context.colors.primary,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                       fontFamily: 'Inter',
@@ -95,21 +95,21 @@ class AiCoachScreen extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.colors.surface,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.outlineVariantColor, width: 1.5),
+                        border: Border.all(color: context.colors.outlineVariant, width: 1.5),
                       ),
-                      child: const Icon(Icons.more_horiz_rounded, color: AppTheme.textColor, size: 20),
+                      child: Icon(Icons.more_horiz_rounded, color: context.colors.text, size: 20),
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Your ADHD-friendly coach 💜',
                 style: TextStyle(
-                  color: AppTheme.textVariantColor,
+                  color: context.colors.textVariant,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Inter',
@@ -121,7 +121,7 @@ class AiCoachScreen extends StatelessWidget {
               Expanded(
                 child: Obx(() {
                   if (controller.messages.isEmpty) {
-                    return _buildEmptyState(controller);
+                    return _buildEmptyState(context, controller);
                   }
                   return ListView.builder(
                     controller: scrollController,
@@ -130,7 +130,7 @@ class AiCoachScreen extends StatelessWidget {
                     itemCount: controller.messages.length,
                     itemBuilder: (context, index) {
                       final message = controller.messages[index];
-                      return _buildMessageBubble(message);
+                      return _buildMessageBubble(context, message);
                     },
                   );
                 }),
@@ -138,7 +138,7 @@ class AiCoachScreen extends StatelessWidget {
 
               // Typing indicator
               Obx(() => controller.isLoading.value
-                  ? _buildTypingIndicator()
+                  ? _buildTypingIndicator(context)
                   : const SizedBox.shrink()),
 
               // Input bar
@@ -150,8 +150,8 @@ class AiCoachScreen extends StatelessWidget {
                   bottom: MediaQuery.of(context).viewInsets.bottom + 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(top: BorderSide(color: AppTheme.outlineVariantColor.withValues(alpha: 0.5))),
+                  color: context.colors.surface,
+                  border: Border(top: BorderSide(color: context.colors.outlineVariant.withValues(alpha: 0.5))),
                 ),
                 child: Row(
                   children: [
@@ -160,7 +160,7 @@ class AiCoachScreen extends StatelessWidget {
                       child: TextField(
                         controller: textController,
                         textInputAction: TextInputAction.send,
-                        style: const TextStyle(fontFamily: 'Inter', fontSize: 15),
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 15, color: context.colors.text),
                         onSubmitted: (value) {
                           if (value.trim().isNotEmpty) {
                             controller.sendMessage(value);
@@ -169,21 +169,21 @@ class AiCoachScreen extends StatelessWidget {
                         },
                         decoration: InputDecoration(
                           hintText: 'Message your AI coach...',
-                          hintStyle: const TextStyle(color: AppTheme.textVariantColor, fontFamily: 'Inter', fontSize: 15),
+                          hintStyle: TextStyle(color: context.colors.textVariant, fontFamily: 'Inter', fontSize: 15),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: AppTheme.outlineVariantColor),
+                            borderSide: BorderSide(color: context.colors.outlineVariant),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: AppTheme.outlineVariantColor),
+                            borderSide: BorderSide(color: context.colors.outlineVariant),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: const BorderSide(color: AppTheme.primaryColor),
+                            borderSide: BorderSide(color: context.colors.primary),
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: context.colors.surface,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         ),
                       ),
@@ -202,8 +202,8 @@ class AiCoachScreen extends StatelessWidget {
                       child: Container(
                         width: 48,
                         height: 48,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryColor,
+                        decoration: BoxDecoration(
+                          color: context.colors.primary,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.mic_rounded, color: Colors.white, size: 22),
@@ -219,7 +219,7 @@ class AiCoachScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(ChatController controller) {
+  Widget _buildEmptyState(BuildContext context, ChatController controller) {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -233,27 +233,27 @@ class AiCoachScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.colors.surface,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.outlineVariantColor),
-                  boxShadow: AppTheme.cardShadow,
+                  border: Border.all(color: context.colors.outlineVariant),
+                  boxShadow: context.colors.cardShadow,
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome, color: AppTheme.primaryColor, size: 18),
+                    Icon(Icons.auto_awesome, color: context.colors.primary, size: 18),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         prompt,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textColor,
+                          color: context.colors.text,
                         ),
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: AppTheme.outlineVariantColor, size: 20),
+                    Icon(Icons.chevron_right_rounded, color: context.colors.outlineVariant, size: 20),
                   ],
                 ),
               ),
@@ -264,7 +264,7 @@ class AiCoachScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(BuildContext context, ChatMessage message) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Row(
@@ -275,8 +275,8 @@ class AiCoachScreen extends StatelessWidget {
             Container(
               width: 32,
               height: 32,
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryColor,
+              decoration: BoxDecoration(
+                color: context.colors.primary,
                 shape: BoxShape.circle,
               ),
               child: const BrainMascot(size: 20),
@@ -288,16 +288,16 @@ class AiCoachScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 color: message.isUser
-                    ? const Color(0xFFE8EEFA)
-                    : const Color(0xFFF4F1FC),
+                    ? (context.isDarkTheme ? const Color(0xFF23304A) : const Color(0xFFE8EEFA))
+                    : context.colors.iconBubble,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 message.text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontFamily: 'Inter',
-                  color: AppTheme.textColor,
+                  color: context.colors.text,
                   height: 1.5,
                   fontWeight: FontWeight.w400,
                 ),
@@ -309,7 +309,7 @@ class AiCoachScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTypingIndicator() {
+  Widget _buildTypingIndicator(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
@@ -317,8 +317,8 @@ class AiCoachScreen extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            decoration: const BoxDecoration(
-              color: AppTheme.primaryColor,
+            decoration: BoxDecoration(
+              color: context.colors.primary,
               shape: BoxShape.circle,
             ),
             child: const BrainMascot(size: 20),
@@ -327,7 +327,7 @@ class AiCoachScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F1FC),
+              color: context.colors.iconBubble,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -396,8 +396,8 @@ class _AnimatedDotState extends State<_AnimatedDot>
       child: Container(
         width: 6,
         height: 6,
-        decoration: const BoxDecoration(
-          color: AppTheme.primaryColor,
+        decoration: BoxDecoration(
+          color: context.colors.primary,
           shape: BoxShape.circle,
         ),
       ),

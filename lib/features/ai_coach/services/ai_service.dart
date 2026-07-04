@@ -69,7 +69,9 @@ class AiCoachService {
 
   // Response patterns based on user input analysis
   Future<String> getResponse(String userInput, {Map<String, dynamic>? context}) async {
+    final offlineMode = context?['offline_mode'] == true;
     try {
+      if (offlineMode) throw StateError('Offline mode enabled — skipping Gemini call');
       final model = GenerativeModel(
         model: AppConfig.geminiModel,
         apiKey: AppConfig.geminiApiKey,
@@ -80,9 +82,24 @@ class AiCoachService {
         ),
       );
       final timeOfDay = context?['time_of_day'] ?? 'day';
+      final brainType = context?['brain_type'] ?? 'Not sure';
+      final mood = context?['mood'] as String?;
+      final goals = (context?['goals'] as List?)?.cast<String>() ?? const [];
+      final habitsSummary = context?['habits_summary'] as String?;
+
+      final contextLines = <String>[
+        'Time of day: $timeOfDay',
+        'Brain type: $brainType',
+        if (goals.isNotEmpty) 'Stated goals: ${goals.join(', ')}',
+        if (habitsSummary != null && habitsSummary.isNotEmpty)
+          'Current habits: $habitsSummary',
+        if (mood != null && mood.isNotEmpty) 'Relevant insight: $mood',
+      ];
+
       final prompt = 'User message: "$userInput". '
-          'Current time of day: $timeOfDay. '
-          'Respond as a warm, supportive ADHD coach in plain text.';
+          'User context — ${contextLines.join('; ')}. '
+          'Respond as a warm, supportive ADHD coach in plain text, '
+          'personalizing to their brain type and current habits where relevant.';
       final content = [Content.text(prompt)];
       final response = await model.generateContent(content);
       if (response.text != null && response.text!.isNotEmpty) {

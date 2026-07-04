@@ -62,8 +62,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
           'Purchase failed',
           e.toString(),
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppTheme.warningContainerColor,
-          colorText: AppTheme.onWarningContainerColor,
+          backgroundColor: context.colors.warningContainer,
+          colorText: context.colors.onWarningContainer,
         );
       }
     } finally {
@@ -99,8 +99,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
           'Restore failed',
           e.toString(),
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppTheme.warningContainerColor,
-          colorText: AppTheme.onWarningContainerColor,
+          backgroundColor: context.colors.warningContainer,
+          colorText: context.colors.onWarningContainer,
         );
       }
     } finally {
@@ -111,7 +111,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F8),
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -127,7 +127,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.colors.surface,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -136,7 +136,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.close, size: 20, color: Color(0xFF1A1C1C)),
+                      child: Icon(Icons.close, size: 20, color: context.colors.text),
                     ),
                   ),
                 ],
@@ -155,23 +155,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
               ),
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 'Nudge Pro',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Quicksand',
-                  color: Color(0xFF1A1C1C),
+                  color: context.colors.text,
                 ),
               ),
               const SizedBox(height: 32),
 
               // Benefits
-              _buildBenefitRow('Unlimited habits (free = 5 max)'),
+              _buildBenefitRow(context, 'Unlimited habits (free = 5 max)'),
               const SizedBox(height: 16),
-              _buildBenefitRow('AI coach — unlimited conversations'),
+              _buildBenefitRow(context, 'AI coach — unlimited conversations'),
               const SizedBox(height: 16),
-              _buildBenefitRow('Body doubling focus rooms'),
+              _buildBenefitRow(context, 'Body doubling focus rooms'),
               const SizedBox(height: 48),
 
               // Pricing cards
@@ -180,6 +180,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   // Monthly
                   Expanded(
                     child: _buildPricingCard(
+                      context: context,
                       plan: 'Monthly',
                       price: _monthlyPrice,
                       period: '/month',
@@ -191,6 +192,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   // Annual (recommended)
                   Expanded(
                     child: _buildPricingCard(
+                      context: context,
                       plan: 'Annual',
                       price: _annualPrice,
                       period: '/year',
@@ -209,7 +211,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _purchase,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: context.colors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
@@ -236,11 +238,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'No credit card required',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey,
+                  color: context.colors.textVariant,
                   fontFamily: 'Quicksand',
                 ),
               ),
@@ -252,7 +254,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 child: Text(
                   'Restore purchase',
                   style: TextStyle(
-                    color: Colors.grey[500],
+                    color: context.colors.textVariant,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Quicksand',
                   ),
@@ -265,7 +267,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildBenefitRow(String text) {
+  Widget _buildBenefitRow(BuildContext context, String text) {
     return Row(
       children: [
         Container(
@@ -280,10 +282,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
         const SizedBox(width: 12),
         Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontFamily: 'Quicksand',
-            color: Color(0xFF1A1C1C),
+            color: context.colors.text,
           ),
         ),
       ],
@@ -291,6 +293,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Widget _buildPricingCard({
+    required BuildContext context,
     required String plan,
     required String price,
     required String period,
@@ -302,16 +305,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isRecommended ? AppTheme.primaryColor : Colors.grey.shade200,
+            color: isRecommended ? context.colors.primary : context.colors.outlineVariant,
             width: isRecommended ? 2 : 1,
           ),
           boxShadow: isRecommended
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    color: context.colors.primary.withValues(alpha: 0.1),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -325,7 +328,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF825100),
+                  color: context.colors.warning,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
@@ -340,27 +343,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
               ),
             Text(
               plan,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey,
+                color: context.colors.textVariant,
                 fontFamily: 'Quicksand',
               ),
             ),
             const SizedBox(height: 8),
             Text(
               price,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Quicksand',
-                color: Color(0xFF1A1C1C),
+                color: context.colors.text,
               ),
             ),
             Text(
               period,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color: context.colors.textVariant,
                 fontFamily: 'Quicksand',
               ),
             ),

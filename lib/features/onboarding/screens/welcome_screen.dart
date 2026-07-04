@@ -31,7 +31,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         'Select your brain type',
         'This helps Nudge personalize your experience.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppTheme.warningColor,
+        backgroundColor: context.colors.warning,
         colorText: Colors.white,
       );
       return;
@@ -44,10 +44,26 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _onSignIn() async {
+    if (_selectedBrainType == null) {
+      Get.snackbar(
+        'Select your brain type',
+        'This helps Nudge personalize your experience.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: context.colors.warning,
+        colorText: Colors.white,
+      );
+      return;
+    }
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('brain_type', _selectedBrainType!);
       await _authService.signInWithGoogle();
       if (mounted) {
-        Get.offAllNamed('/home');
+        // Only skip straight to Home for a returning user who already
+        // finished onboarding before (e.g. reinstalling and signing back in).
+        // A brand-new Google sign-in still needs goals + reminder setup.
+        final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+        Get.offAllNamed(onboardingComplete ? '/home' : '/onboarding/goals');
       }
     } catch (e) {
       if (mounted) {
@@ -55,7 +71,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           'Sign In Failed',
           e.toString(),
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppTheme.warningContainerColor,
+          backgroundColor: context.colors.warningContainer,
         );
       }
     }
@@ -64,7 +80,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -97,18 +113,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         style: TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.primaryColor,
+                          color: context.colors.primary,
                           fontFamily: 'Inter',
                           height: 1.1,
                         ),
                       ).animate().fadeIn(duration: 500.ms, delay: 150.ms).slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Gentle habits for real brains',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textVariantColor,
+                          color: context.colors.textVariant,
                           fontFamily: 'Inter',
                         ),
                       ).animate().fadeIn(duration: 500.ms, delay: 280.ms).slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
@@ -141,7 +157,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         child: ElevatedButton(
                           onPressed: _onGetStarted,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryColor,
+                            backgroundColor: context.colors.primary,
                             foregroundColor: Colors.white,
                             shape: const StadiumBorder(),
                             elevation: 0,
@@ -159,10 +175,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       const SizedBox(height: 6),
                       TextButton(
                         onPressed: _onSignIn,
-                        child: const Text(
+                        child: Text(
                           'Sign in',
                           style: TextStyle(
-                            color: AppTheme.primaryColor,
+                            color: context.colors.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 17,
                             fontFamily: 'Inter',
@@ -208,17 +224,17 @@ class _BrainTypePill extends StatelessWidget {
         height: 62,
         padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white,
+          color: isSelected ? context.colors.primary : context.colors.surface,
           borderRadius: BorderRadius.circular(31),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.35),
+                    color: context.colors.primary.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
                 ]
-              : AppTheme.cardShadow,
+              : context.colors.cardShadow,
         ),
         child: Row(
           children: [
@@ -231,13 +247,13 @@ class _BrainTypePill extends StatelessWidget {
                       width: 30,
                       height: 30,
                       decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                      child: const Icon(Icons.check_rounded, color: AppTheme.primaryColor, size: 20),
+                      child: Icon(Icons.check_rounded, color: context.colors.primary, size: 20),
                     )
                   : SizedBox(
                       key: const ValueKey('icon'),
                       width: 30,
                       height: 30,
-                      child: Icon(icon, color: AppTheme.primaryColor, size: 26),
+                      child: Icon(icon, color: context.colors.primary, size: 26),
                     ),
             ),
             const SizedBox(width: 16),
@@ -246,7 +262,7 @@ class _BrainTypePill extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppTheme.textColor,
+                color: isSelected ? Colors.white : context.colors.text,
                 fontFamily: 'Inter',
               ),
             ),

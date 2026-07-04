@@ -129,18 +129,18 @@ class _BreathingCircleState extends State<BreathingCircle>
               height: 200 * _scale,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                color: context.colors.primary.withValues(alpha: 0.2),
                 border: Border.all(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.5),
+                  color: context.colors.primary.withValues(alpha: 0.5),
                   width: 3,
                 ),
               ),
               child: Center(
                 child: Text(
                   _label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
-                    color: AppTheme.primaryColor,
+                    color: context.colors.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -151,7 +151,7 @@ class _BreathingCircleState extends State<BreathingCircle>
         const SizedBox(height: 40),
         Text(
           'Cycle ${_cyclesCompleted + 1} of $_targetCycles',
-          style: const TextStyle(color: AppTheme.textVariantColor),
+          style: TextStyle(color: context.colors.textVariant),
         ).animate().fadeIn(),
       ],
     );

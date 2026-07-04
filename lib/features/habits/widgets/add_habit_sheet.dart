@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../models/habit_model.dart';
 import '../controllers/home_controller.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/notifications/notification_service.dart';
 import '../../../shared/widgets/brain_mascot.dart';
 
 class AddHabitSheet extends StatefulWidget {
@@ -64,32 +63,7 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
       controller.updateHabit(habit);
     }
 
-    _scheduleReminderIfNeeded(habit);
     Navigator.pop(context);
-  }
-
-  Future<void> _scheduleReminderIfNeeded(HabitModel habit) async {
-    if (habit.reminderStyle == 'none') return;
-
-    final Map<String, int> timeMap = {
-      'morning': 8 * 60,
-      'afternoon': 14 * 60,
-      'evening': 18 * 60,
-      'anytime': 9 * 60,
-    };
-
-    final reminderTime = timeMap[habit.timeOfDay] ?? 9 * 60;
-    try {
-      await NotificationService().scheduleHabitReminders(
-        habitId: habit.id,
-        title: 'Nudge: ${habit.name}',
-        body: 'Time for your ${habit.name} habit!',
-        reminderTimes: [reminderTime],
-        transitionWarningMinutes: 10,
-      );
-    } catch (e) {
-      debugPrint('Failed to schedule reminder: $e');
-    }
   }
 
   @override
@@ -101,9 +75,9 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
         left: 20,
         right: 20,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -118,12 +92,12 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
                 height: 5,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: AppTheme.outlineVariantColor,
+                  color: context.colors.outlineVariant,
                   borderRadius: BorderRadius.circular(2.5),
                 ),
               ),
             ),
-            
+
             // Header
             Row(
               children: [
@@ -133,20 +107,20 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.colors.surface,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.outlineVariantColor, width: 1.5),
+                      border: Border.all(color: context.colors.outlineVariant, width: 1.5),
                     ),
-                    child: const Icon(Icons.chevron_left_rounded, color: AppTheme.textColor, size: 24),
+                    child: Icon(Icons.chevron_left_rounded, color: context.colors.text, size: 24),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Text(
                   widget.habit == null ? 'Add habit' : 'Edit habit',
-                  style: const TextStyle(
-                    fontSize: 24, 
-                    fontWeight: FontWeight.w700, 
-                    color: AppTheme.textColor,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.text,
                     fontFamily: 'Inter',
                     letterSpacing: -0.5,
                   ),
@@ -154,7 +128,7 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
                 const Spacer(),
                 if (widget.habit != null)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                    icon: Icon(Icons.delete_outline_rounded, color: context.colors.warning),
                     onPressed: () {
                       Get.find<HomeController>().deleteHabit(widget.habit!.id);
                       Navigator.pop(context);
@@ -171,25 +145,25 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
               controller: _nameController,
               autofocus: widget.habit == null,
               maxLength: 50,
-              style: const TextStyle(fontFamily: 'Inter', fontSize: 16),
+              style: TextStyle(fontFamily: 'Inter', fontSize: 16, color: context.colors.text),
               decoration: InputDecoration(
                 hintText: 'e.g. Take medication',
-                hintStyle: const TextStyle(color: AppTheme.textVariantColor, fontFamily: 'Inter'),
+                hintStyle: TextStyle(color: context.colors.textVariant, fontFamily: 'Inter'),
                 counterText: '',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE4DFFF), width: 1.5),
+                  borderSide: BorderSide(color: context.colors.outlineVariant, width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE4DFFF), width: 1.5),
+                  borderSide: BorderSide(color: context.colors.outlineVariant, width: 1.5),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                  borderSide: BorderSide(color: context.colors.primary, width: 2),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: context.colors.surface,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               ),
               onChanged: (val) => setState(() {}),
@@ -204,13 +178,13 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  _buildTimeChip('morning', 'Morning', Icons.wb_sunny_rounded),
+                  _buildTimeChip(context, 'morning', 'Morning', Icons.wb_sunny_rounded),
                   const SizedBox(width: 8),
-                  _buildTimeChip('afternoon', 'Afternoon', Icons.wb_sunny_outlined),
+                  _buildTimeChip(context, 'afternoon', 'Afternoon', Icons.wb_sunny_outlined),
                   const SizedBox(width: 8),
-                  _buildTimeChip('evening', 'Evening', Icons.nightlight_round),
+                  _buildTimeChip(context, 'evening', 'Evening', Icons.nightlight_round),
                   const SizedBox(width: 8),
-                  _buildTimeChip('anytime', 'Anytime', Icons.schedule_rounded),
+                  _buildTimeChip(context, 'anytime', 'Anytime', Icons.schedule_rounded),
                 ],
               ),
             ),
@@ -220,6 +194,7 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
             const Text('How should we remind you?', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter')),
             const SizedBox(height: 16),
             _buildReminderCard(
+              context: context,
               id: 'soft',
               title: 'Soft nudge (no badge)',
               subtitle: 'Gentle reminder, no streak pressure',
@@ -227,30 +202,37 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
             ),
             const SizedBox(height: 12),
             _buildReminderCard(
+              context: context,
               id: 'vibrate',
               title: 'Vibrate only',
               subtitle: 'Discreet vibration, no notification',
               icon: Icons.vibration_rounded,
             ),
             const SizedBox(height: 32),
-            
+
+            // Color
+            const Text('Pick a color', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter')),
+            const SizedBox(height: 16),
+            _buildColorPicker(context),
+            const SizedBox(height: 32),
+
             // AI Breakdown
             const Text('Want AI help breaking this down?', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter')),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.outlineVariantColor, width: 1.5),
+                border: Border.all(color: context.colors.outlineVariant, width: 1.5),
               ),
               child: Row(
                 children: [
                   Container(
                     width: 48,
                     height: 48,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF4F1FC),
+                    decoration: BoxDecoration(
+                      color: context.colors.iconBubble,
                       shape: BoxShape.circle,
                     ),
                     child: const BrainMascot(size: 28),
@@ -259,10 +241,10 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('AI task breakdown help', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, fontFamily: 'Inter')),
-                        SizedBox(height: 2),
-                        Text('Get micro-steps when you feel stuck', style: TextStyle(color: AppTheme.textVariantColor, fontSize: 13, fontFamily: 'Inter')),
+                      children: [
+                        const Text('AI task breakdown help', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, fontFamily: 'Inter')),
+                        const SizedBox(height: 2),
+                        Text('Get micro-steps when you feel stuck', style: TextStyle(color: context.colors.textVariant, fontSize: 13, fontFamily: 'Inter')),
                       ],
                     ),
                   ),
@@ -270,15 +252,15 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
                     value: _aiBreakdownEnabled,
                     onChanged: (val) => setState(() => _aiBreakdownEnabled = val),
                     activeColor: Colors.white,
-                    activeTrackColor: AppTheme.primaryColor,
+                    activeTrackColor: context.colors.primary,
                     inactiveThumbColor: Colors.white,
-                    inactiveTrackColor: AppTheme.outlineVariantColor,
+                    inactiveTrackColor: context.colors.outlineVariant,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 40),
-            
+
             // Save Button
             SizedBox(
               width: double.infinity,
@@ -286,8 +268,8 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
               child: ElevatedButton(
                 onPressed: _nameController.text.trim().isEmpty ? null : _saveHabit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  disabledBackgroundColor: AppTheme.primaryColor.withValues(alpha: 0.5),
+                  backgroundColor: context.colors.primary,
+                  disabledBackgroundColor: context.colors.primary.withValues(alpha: 0.5),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   elevation: 0,
                 ),
@@ -309,17 +291,17 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
     );
   }
 
-  Widget _buildTimeChip(String id, String label, IconData icon) {
+  Widget _buildTimeChip(BuildContext context, String id, String label, IconData icon) {
     final isSelected = _selectedTimeOfDay == id;
     return GestureDetector(
       onTap: () => setState(() => _selectedTimeOfDay = id),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white,
+          color: isSelected ? context.colors.primary : context.colors.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : AppTheme.outlineVariantColor,
+            color: isSelected ? context.colors.primary : context.colors.outlineVariant,
             width: 1.5,
           ),
         ),
@@ -329,13 +311,13 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : AppTheme.textVariantColor,
+              color: isSelected ? Colors.white : context.colors.textVariant,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textVariantColor,
+                color: isSelected ? Colors.white : context.colors.textVariant,
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontFamily: 'Inter',
@@ -347,17 +329,52 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
     );
   }
 
-  Widget _buildReminderCard({required String id, required String title, required String subtitle, required IconData icon}) {
+  String _colorToHex(Color color) {
+    final argb = color.toARGB32().toRadixString(16).padLeft(8, '0');
+    return '#${argb.substring(2).toUpperCase()}';
+  }
+
+  Widget _buildColorPicker(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: AppTheme.habitColors.map((color) {
+        final hex = _colorToHex(color);
+        final isSelected = _selectedColor.toUpperCase() == hex;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedColor = hex),
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: isSelected ? Border.all(color: context.colors.text, width: 2) : null,
+            ),
+            child: isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildReminderCard({
+    required BuildContext context,
+    required String id,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
     final isSelected = _selectedReminderStyle == id;
     return GestureDetector(
       onTap: () => setState(() => _selectedReminderStyle = id),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF9F8FF) : Colors.white,
+          color: isSelected ? context.colors.selectedGoal : context.colors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : AppTheme.outlineVariantColor,
+            color: isSelected ? context.colors.primary : context.colors.outlineVariant,
             width: 1.5,
           ),
         ),
@@ -367,11 +384,11 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white : const Color(0xFFF4F1FC),
+                color: isSelected ? context.colors.surface : context.colors.iconBubble,
                 shape: BoxShape.circle,
-                border: Border.all(color: isSelected ? const Color(0xFFE4DFFF) : Colors.transparent),
+                border: Border.all(color: isSelected ? context.colors.outlineVariant : Colors.transparent),
               ),
-              child: Icon(icon, color: AppTheme.primaryColor, size: 24),
+              child: Icon(icon, color: context.colors.primary, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -380,18 +397,18 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                       fontFamily: 'Inter',
-                      color: AppTheme.textColor,
+                      color: context.colors.text,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: AppTheme.textVariantColor,
+                    style: TextStyle(
+                      color: context.colors.textVariant,
                       fontSize: 13,
                       fontFamily: 'Inter',
                     ),
@@ -404,10 +421,10 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryColor : Colors.white,
+                color: isSelected ? context.colors.primary : context.colors.surface,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AppTheme.primaryColor : AppTheme.textVariantColor.withValues(alpha: 0.5),
+                  color: isSelected ? context.colors.primary : context.colors.textVariant.withValues(alpha: 0.5),
                   width: 1.5,
                 ),
               ),

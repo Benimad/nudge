@@ -42,7 +42,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -60,11 +60,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.colors.surface,
                           shape: BoxShape.circle,
-                          boxShadow: AppTheme.cardShadow,
+                          boxShadow: context.colors.cardShadow,
                         ),
-                        child: const Icon(Icons.chevron_left_rounded, color: AppTheme.textColor, size: 30),
+                        child: Icon(Icons.chevron_left_rounded, color: context.colors.text, size: 30),
                       ),
                     ).animate().fadeIn(duration: 350.ms).scale(begin: const Offset(0.7, 0.7), curve: Curves.easeOutBack),
                   ),
@@ -79,25 +79,25 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
             const SizedBox(height: 20),
 
-            const Text(
+            Text(
               'What are your goals?',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: context.colors.text,
                 fontFamily: 'Inter',
                 height: 1.15,
               ),
             ).animate().fadeIn(duration: 450.ms, delay: 120.ms).slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Pick up to 3 — you can change these',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textVariantColor,
+                color: context.colors.textVariant,
                 fontFamily: 'Inter',
               ),
             ).animate().fadeIn(duration: 450.ms, delay: 220.ms).slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
@@ -135,9 +135,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 child: ElevatedButton(
                   onPressed: _selectedGoals.isEmpty ? null : _onContinue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: context.colors.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppTheme.outlineVariantColor,
+                    disabledBackgroundColor: context.colors.outlineVariant,
                     disabledForegroundColor: Colors.white,
                     shape: const StadiumBorder(),
                     elevation: 0,
@@ -185,9 +185,9 @@ class _GoalCard extends StatelessWidget {
         curve: Curves.easeOutCubic,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.selectedGoalColor : Colors.white,
+          color: isSelected ? context.colors.selectedGoal : context.colors.surface,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: AppTheme.cardShadow,
+          boxShadow: context.colors.cardShadow,
         ),
         child: Stack(
           children: [
@@ -199,7 +199,7 @@ class _GoalCard extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 width: isSelected ? 5 : 0,
-                color: AppTheme.primaryColor,
+                color: context.colors.primary,
               ),
             ),
             Padding(
@@ -209,20 +209,20 @@ class _GoalCard extends StatelessWidget {
                   Container(
                     width: 58,
                     height: 58,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE9E4F8),
+                    decoration: BoxDecoration(
+                      color: context.colors.iconBubble,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, color: AppTheme.primaryColor, size: 27),
+                    child: Icon(icon, color: context.colors.primary, size: 27),
                   ),
                   const SizedBox(width: 18),
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor,
+                        color: context.colors.text,
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -238,8 +238,8 @@ class _GoalCard extends StatelessWidget {
                             key: const ValueKey('on'),
                             width: 34,
                             height: 34,
-                            decoration: const BoxDecoration(
-                              color: AppTheme.primaryColor,
+                            decoration: BoxDecoration(
+                              color: context.colors.primary,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
@@ -250,7 +250,7 @@ class _GoalCard extends StatelessWidget {
                             height: 30,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFD8D8DE), width: 2),
+                              border: Border.all(color: context.colors.outlineVariant, width: 2),
                             ),
                           ),
                   ),

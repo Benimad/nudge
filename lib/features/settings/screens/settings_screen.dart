@@ -31,7 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Toggle states
   bool _sensorySafe = false;
   bool _noRedBadges = true;
-  bool _offlineMode = true;
+  bool _offlineMode = false;
   bool _shareTherapist = false;
 
   @override
@@ -54,7 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _brainType = prefs.getString('brain_type') ?? 'Not set';
         _sensorySafe = prefs.getBool('sensory_safe_ui') ?? false;
         _noRedBadges = prefs.getBool('no_red_badges') ?? true;
-        _offlineMode = prefs.getBool('offline_mode') ?? true;
+        _offlineMode = prefs.getBool('offline_mode') ?? false;
         _shareTherapist = prefs.getBool('share_therapist') ?? false;
       });
     }
@@ -63,6 +63,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveToggle(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
+  }
+
+  Future<void> _confirmDeleteAllData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete all data?'),
+        content: const Text(
+          'This permanently removes every habit, completion, focus session, and preference from this device. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Delete everything', style: TextStyle(color: context.colors.warning)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteAllData();
+    }
+  }
+
+  void _showAboutDialog() {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Nudge',
+      applicationVersion: _appVersion,
+      applicationIcon: Icon(Icons.psychology_rounded, color: context.colors.primary, size: 40),
+      children: const [
+        SizedBox(height: 12),
+        Text('An ADHD-friendly habit tracker and focus companion.'),
+      ],
+    );
+  }
+
+  Future<void> _deleteAllData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      await DatabaseHelper.instance.deleteAllData();
+      await NotificationService().cancelAll();
+      if (mounted) {
+        Get.offAllNamed('/onboarding/welcome');
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Delete failed',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.warningColor,
+        colorText: Colors.white,
+      );
+    }
   }
 
   Future<void> _exportData() async {
@@ -99,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'Export failed',
         e.toString(),
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
+        backgroundColor: AppTheme.warningColor,
         colorText: Colors.white,
       );
     }
@@ -108,74 +167,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F8),
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           physics: const BouncingScrollPhysics(),
           children: [
             // Custom Header
-            const Text(
+            Text(
               'Settings',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textColor,
+                color: context.colors.text,
                 fontFamily: 'Inter',
                 letterSpacing: -1,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Customize Nudge to work for your brain.',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textVariantColor,
+                color: context.colors.textVariant,
                 fontFamily: 'Inter',
               ),
             ),
             const SizedBox(height: 32),
 
             // Pro Card
-            _buildProCard(),
+            if (!_isLoadingPro) _isPro ? _buildProStatusCard(context) : _buildProCard(context),
             const SizedBox(height: 32),
 
             // Preferences Section
-            _buildSectionHeader('Preferences'),
+            _buildSectionHeader(context, 'Preferences'),
             const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
                 children: [
                   _buildPreferenceToggle(
+                    context: context,
                     title: 'Sensory-safe UI',
                     subtitle: 'Simpler visuals, calmer experience',
                     icon: Icons.auto_awesome_rounded,
                     value: _sensorySafe,
                     onChanged: (val) => setState(() { _sensorySafe = val; _saveToggle('sensory_safe_ui', val); }),
                   ),
-                  const Divider(height: 1, indent: 72, endIndent: 24, color: Color(0xFFF0F0F0)),
+                  Divider(height: 1, indent: 72, endIndent: 24, color: context.colors.divider),
                   _buildPreferenceToggle(
+                    context: context,
                     title: 'No red badges',
                     subtitle: 'Use amber instead of red',
                     icon: Icons.verified_user_rounded,
                     value: _noRedBadges,
                     onChanged: (val) => setState(() { _noRedBadges = val; _saveToggle('no_red_badges', val); }),
                   ),
-                  const Divider(height: 1, indent: 72, endIndent: 24, color: Color(0xFFF0F0F0)),
+                  Divider(height: 1, indent: 72, endIndent: 24, color: context.colors.divider),
                   _buildPreferenceToggle(
+                    context: context,
                     title: 'Offline mode',
                     subtitle: 'Use Nudge without internet',
                     icon: Icons.cloud_download_rounded,
                     value: _offlineMode,
                     onChanged: (val) => setState(() { _offlineMode = val; _saveToggle('offline_mode', val); }),
                   ),
-                  const Divider(height: 1, indent: 72, endIndent: 24, color: Color(0xFFF0F0F0)),
+                  Divider(height: 1, indent: 72, endIndent: 24, color: context.colors.divider),
                   _buildPreferenceToggle(
+                    context: context,
                     title: 'Share with therapist',
                     subtitle: 'Export data for your care team',
                     icon: Icons.people_alt_rounded,
@@ -188,14 +251,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 32),
 
             // Privacy & Data Section
-            _buildSectionHeader('Privacy & data'),
+            _buildSectionHeader(context, 'Privacy & data'),
             const SizedBox(height: 16),
-            
+
             // On-device AI Banner
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
@@ -203,52 +266,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     width: 48,
                     height: 48,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF4F1FC),
+                    decoration: BoxDecoration(
+                      color: context.colors.iconBubble,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.lock_rounded, color: AppTheme.primaryColor, size: 24),
+                    child: Icon(Icons.lock_rounded, color: context.colors.primary, size: 24),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'On-device AI, no tracking',
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter', color: AppTheme.textColor),
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter', color: context.colors.text),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Your data stays on your device.\nNo ads. No tracking. Ever.',
-                          style: TextStyle(color: AppTheme.textVariantColor, fontSize: 13, fontFamily: 'Inter', height: 1.4),
+                          style: TextStyle(color: context.colors.textVariant, fontSize: 13, fontFamily: 'Inter', height: 1.4),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: AppTheme.textVariantColor),
+                  Icon(Icons.chevron_right_rounded, color: context.colors.textVariant),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Links
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
                 children: [
-                  _buildActionLink('Export my data', Icons.file_download_outlined, _exportData),
-                  const Divider(height: 1, indent: 64, endIndent: 24, color: Color(0xFFF0F0F0)),
-                  _buildActionLink('Backup & restore', Icons.cloud_outlined, () {}),
-                  const Divider(height: 1, indent: 64, endIndent: 24, color: Color(0xFFF0F0F0)),
-                  _buildActionLink('Help & support', Icons.help_outline_rounded, () {}),
-                  const Divider(height: 1, indent: 64, endIndent: 24, color: Color(0xFFF0F0F0)),
-                  _buildActionLink('About Nudge', Icons.info_outline_rounded, () {}),
+                  _buildActionLink(context, 'Export my data', Icons.file_download_outlined, _exportData),
+                  Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
+                  _buildActionLink(context, 'Backup & restore', Icons.cloud_outlined, () {}),
+                  Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
+                  _buildActionLink(context, 'Help & support', Icons.help_outline_rounded, () {}),
+                  Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
+                  _buildActionLink(context, 'About Nudge', Icons.info_outline_rounded, _showAboutDialog),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Container(
+              decoration: BoxDecoration(
+                color: context.colors.surface,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: _buildActionLink(
+                context,
+                'Delete all data',
+                Icons.delete_outline_rounded,
+                _confirmDeleteAllData,
+                color: context.colors.warning,
               ),
             ),
 
@@ -259,19 +338,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: AppTheme.textColor,
+        color: context.colors.text,
         fontFamily: 'Inter',
       ),
     );
   }
 
-  Widget _buildProCard() {
+  Widget _buildProCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -283,7 +362,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            color: context.colors.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -354,7 +433,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.chevron_right_rounded, color: AppTheme.primaryColor),
+            child: Icon(Icons.chevron_right_rounded, color: context.colors.primary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProStatusCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.isDarkTheme ? const Color(0xFF16332A) : const Color(0xFFEAF8F1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: context.colors.success,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.verified_rounded, color: Colors.white, size: 26),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ADHD Pro — active',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, fontFamily: 'Inter', color: context.colors.text),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Advanced AI coaching, insights & unlimited habits unlocked',
+                  style: TextStyle(fontSize: 13, color: context.colors.textVariant, fontFamily: 'Inter'),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -362,6 +481,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildPreferenceToggle({
+    required BuildContext context,
     required String title,
     required String subtitle,
     required IconData icon,
@@ -375,11 +495,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF4F1FC),
+            decoration: BoxDecoration(
+              color: context.colors.iconBubble,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+            child: Icon(icon, color: context.colors.primary, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -388,12 +508,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter', color: AppTheme.textColor),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter', color: context.colors.text),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 13, color: AppTheme.textVariantColor, fontFamily: 'Inter'),
+                  style: TextStyle(fontSize: 13, color: context.colors.textVariant, fontFamily: 'Inter'),
                 ),
               ],
             ),
@@ -402,36 +522,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: value,
             onChanged: onChanged,
             activeColor: Colors.white,
-            activeTrackColor: AppTheme.checkGreen,
+            activeTrackColor: context.colors.success,
             inactiveThumbColor: Colors.white,
-            inactiveTrackColor: AppTheme.outlineVariantColor,
+            inactiveTrackColor: context.colors.outlineVariant,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionLink(String title, IconData icon, VoidCallback onTap) {
+  Widget _buildActionLink(BuildContext context, String title, IconData icon, VoidCallback onTap, {Color? color}) {
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Row(
           children: [
-            Icon(icon, color: AppTheme.textVariantColor, size: 24),
+            Icon(icon, color: color ?? context.colors.textVariant, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 16,
                   fontFamily: 'Inter',
-                  color: AppTheme.textColor,
+                  color: color ?? context.colors.text,
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppTheme.textVariantColor),
+            Icon(Icons.chevron_right_rounded, color: color ?? context.colors.textVariant),
           ],
         ),
       ),

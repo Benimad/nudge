@@ -41,7 +41,7 @@ class _ProGateState extends State<ProGate> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const SizedBox(
+      return SizedBox(
         height: 44,
         child: Center(
           child: SizedBox(
@@ -49,7 +49,7 @@ class _ProGateState extends State<ProGate> {
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: AppTheme.primaryColor,
+              color: context.colors.primary,
             ),
           ),
         ),
@@ -73,7 +73,7 @@ class _ProGateState extends State<ProGate> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: context.colors.surface.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -83,30 +83,30 @@ class _ProGateState extends State<ProGate> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      color: context.colors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.lock_outline,
-                      color: AppTheme.primaryColor,
+                      color: context.colors.primary,
                       size: 20,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     widget.featureName ?? 'Pro feature',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.primaryColor,
+                      color: context.colors.primary,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Quicksand',
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Tap to upgrade',
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppTheme.textVariantColor,
+                      color: context.colors.textVariant,
                       fontFamily: 'Quicksand',
                     ),
                   ),

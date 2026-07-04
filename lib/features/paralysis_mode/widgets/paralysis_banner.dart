@@ -43,12 +43,12 @@ class _ParalysisBannerState extends State<ParalysisBanner> with SingleTickerProv
             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: const Border(left: BorderSide(color: AppTheme.warningColor, width: 3)),
+              border: Border(left: BorderSide(color: context.colors.warning, width: 3)),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.warningColor.withValues(alpha: 0.1),
+                  color: context.colors.warning.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -58,13 +58,13 @@ class _ParalysisBannerState extends State<ParalysisBanner> with SingleTickerProv
               children: [
                 const _PulsingAmberDot(),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Feeling stuck? Let me help',
-                    style: TextStyle(fontWeight: FontWeight.w500, color: AppTheme.textColor),
+                    style: TextStyle(fontWeight: FontWeight.w500, color: context.colors.text),
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.warningColor),
+                Icon(Icons.arrow_forward_ios, size: 14, color: context.colors.warning),
               ],
             ),
           ),
@@ -103,7 +103,7 @@ class _PulsingAmberDotState extends State<_PulsingAmberDot> with SingleTickerPro
       child: Container(
         width: 8,
         height: 8,
-        decoration: const BoxDecoration(color: AppTheme.warningColor, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: context.colors.warning, shape: BoxShape.circle),
       ),
     );
   }

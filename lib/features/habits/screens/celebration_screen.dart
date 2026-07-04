@@ -1,17 +1,47 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
+import '../widgets/celebration_particles.dart';
 
 class CelebrationScreen extends StatelessWidget {
   final int streak;
 
   const CelebrationScreen({super.key, required this.streak});
 
+  static Map<String, String> _messages(int streak) {
+    final rand = Random();
+    List<Map<String, String>> variants;
+    if (streak == 0) {
+      variants = const [
+        {'title': 'First step!', 'subtitle': 'Every journey starts with one. Proud of you.'},
+        {'title': 'Fresh start!', 'subtitle': "You showed up today. That's the whole game."},
+      ];
+    } else if (streak == 1) {
+      variants = const [
+        {'title': 'One day down!', 'subtitle': 'The hardest part is starting — you did it.'},
+      ];
+    } else if (streak < 7) {
+      variants = const [
+        {'title': 'Building momentum', 'subtitle': 'Every single task counts — even the small ones.'},
+        {'title': 'Keep it rolling', 'subtitle': "Progress isn't a straight line. This still counts."},
+      ];
+    } else {
+      variants = const [
+        {'title': 'Unstoppable!', 'subtitle': 'This is who you are now.'},
+        {'title': "You're on fire!", 'subtitle': 'Small steps compound. Look at you go.'},
+      ];
+    }
+    return variants[rand.nextInt(variants.length)];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final messages = _messages(streak);
+    final softMintBg = context.isDarkTheme ? const Color(0xFF16332A) : const Color(0xFFEAF8F1);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
@@ -24,54 +54,55 @@ class CelebrationScreen extends StatelessWidget {
                 child: Container(
                   width: 180,
                   height: 180,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEAF8F1),
+                  decoration: BoxDecoration(
+                    color: softMintBg,
                     shape: BoxShape.circle,
                   ),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      const Icon(
+                      const _CelebrationBurst(),
+                      Icon(
                         Icons.star_rounded,
-                        color: AppTheme.checkGreen,
+                        color: context.colors.success,
                         size: 96,
                       ).animate().scale(
                             duration: 600.ms,
                             curve: Curves.elasticOut,
                           ),
                       // Decorative sparks around the star
-                      _buildSpark(const Offset(-50, -45), -0.7),
-                      _buildSpark(const Offset(50, -45), 0.7),
-                      _buildSpark(const Offset(-65, 10), -1.4),
-                      _buildSpark(const Offset(65, 10), 1.4),
-                      _buildSpark(const Offset(-35, 60), -2.2),
-                      _buildSpark(const Offset(35, 60), 2.2),
+                      _buildSpark(context, const Offset(-50, -45), -0.7),
+                      _buildSpark(context, const Offset(50, -45), 0.7),
+                      _buildSpark(context, const Offset(-65, 10), -1.4),
+                      _buildSpark(context, const Offset(65, 10), 1.4),
+                      _buildSpark(context, const Offset(-35, 60), -2.2),
+                      _buildSpark(context, const Offset(35, 60), 2.2),
                     ],
                   ),
                 ).animate().fadeIn(duration: 400.ms).scale(begin: const Offset(0.8, 0.8)),
               ),
               const SizedBox(height: 32),
-              
-              const Text(
-                'Done! Great job.',
+
+              Text(
+                messages['title']!,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textColor,
+                  color: context.colors.text,
                   fontFamily: 'Inter',
                   letterSpacing: -0.5,
                 ),
               ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-              
+
               const SizedBox(height: 12),
-              
-              const Text(
-                'Every single task counts —\neven the small ones.',
+
+              Text(
+                messages['subtitle']!,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textVariantColor,
+                  color: context.colors.textVariant,
                   fontFamily: 'Inter',
                   height: 1.4,
                 ),
@@ -83,11 +114,11 @@ class CelebrationScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppTheme.checkGreen,
+                  color: context.colors.success,
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.checkGreen.withValues(alpha: 0.3),
+                      color: context.colors.success.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -118,7 +149,7 @@ class CelebrationScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF8F1),
+                  color: softMintBg,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Stack(
@@ -144,17 +175,17 @@ class CelebrationScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              '🔥',
-                              style: TextStyle(fontSize: 32),
+                            Text(
+                              streak > 0 ? '🔥' : '✨',
+                              style: const TextStyle(fontSize: 32),
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '$streak days',
-                              style: const TextStyle(
+                              streak > 0 ? '$streak days' : 'Day one',
+                              style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.checkGreen,
+                                color: context.colors.success,
                                 fontFamily: 'Inter',
                                 letterSpacing: -1,
                               ),
@@ -162,13 +193,15 @@ class CelebrationScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'You\'re building something amazing.\nProud of you!',
+                        Text(
+                          streak > 0
+                              ? "You're building something amazing.\nProud of you!"
+                              : 'Every streak starts somewhere.\nThis is yours.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF2C4336),
+                            color: context.isDarkTheme ? context.colors.text : const Color(0xFF2C4336),
                             fontFamily: 'Inter',
                             height: 1.4,
                           ),
@@ -197,8 +230,8 @@ class CelebrationScreen extends StatelessWidget {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.textColor,
-                    side: BorderSide(color: AppTheme.outlineVariantColor, width: 1.5),
+                    foregroundColor: context.colors.text,
+                    side: BorderSide(color: context.colors.outlineVariant, width: 1.5),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                   ),
                 ),
@@ -211,7 +244,7 @@ class CelebrationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSpark(Offset offset, double angle) {
+  Widget _buildSpark(BuildContext context, Offset offset, double angle) {
     return Transform.translate(
       offset: offset,
       child: Transform.rotate(
@@ -220,11 +253,39 @@ class CelebrationScreen extends StatelessWidget {
           width: 4,
           height: 12,
           decoration: BoxDecoration(
-            color: AppTheme.checkGreen,
+            color: context.colors.success,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
       ),
     );
+  }
+}
+
+class _CelebrationBurst extends StatefulWidget {
+  const _CelebrationBurst();
+
+  @override
+  State<_CelebrationBurst> createState() => _CelebrationBurstState();
+}
+
+class _CelebrationBurstState extends State<_CelebrationBurst> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 500))..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CelebrationParticles(animation: _controller, size: 220);
   }
 }

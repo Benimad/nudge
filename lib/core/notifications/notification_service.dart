@@ -105,6 +105,10 @@ class NotificationService {
   }) async {
     await cancelHabitNotifications(habitId);
 
+    final scheduleMode = await canScheduleExactAlarms()
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
     final now = tz.TZDateTime.now(tz.local);
 
     for (int i = 0; i < reminderTimes.length; i++) {
@@ -125,7 +129,7 @@ class NotificationService {
         body: body,
         scheduledDate: scheduledDate,
         notificationDetails: _details(),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: scheduleMode,
         matchDateTimeComponents: DateTimeComponents.time,
       );
 
@@ -140,7 +144,7 @@ class NotificationService {
             body: 'In $transitionWarningMinutes minutes',
             scheduledDate: warningDate,
             notificationDetails: _details(),
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            androidScheduleMode: scheduleMode,
             matchDateTimeComponents: DateTimeComponents.time,
           );
         }
@@ -186,5 +190,27 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
     return result ?? true;
+  }
+
+  /// Android 12+ revokes exact-alarm scheduling by default. Reminders still
+  /// fire without it (see [scheduleHabitReminders]'s inexact fallback) but
+  /// may drift by minutes under Doze. Non-Android platforms and pre-12
+  /// devices report true here since the restriction doesn't apply to them.
+  Future<bool> canScheduleExactAlarms() async {
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return true;
+    return await androidPlugin.canScheduleExactNotifications() ?? true;
+  }
+
+  /// Opens the system "Alarms & reminders" settings page so the user can
+  /// grant exact-alarm scheduling. No-op on platforms/versions that don't
+  /// need it.
+  Future<void> requestExactAlarmPermission() async {
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.requestExactAlarmsPermission();
   }
 }

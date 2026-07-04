@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/ai_service.dart';
 import '../../../core/database/database_helper.dart';
+import '../../habits/controllers/home_controller.dart';
 
 class ChatController extends GetxController {
   final AiCoachService _aiService = AiCoachService();
@@ -111,10 +113,34 @@ class ChatController extends GetxController {
 
   Future<Map<String, dynamic>> _getUserContext() async {
     final prefs = await SharedPreferences.getInstance();
+
+    List<String> goals = [];
+    final goalsJson = prefs.getString('user_goals');
+    if (goalsJson != null) {
+      try {
+        goals = (jsonDecode(goalsJson) as List).cast<String>();
+      } catch (_) {
+        // Malformed/legacy value — treat as no goals set rather than crash.
+      }
+    }
+
+    String habitsSummary = '';
+    try {
+      final home = Get.find<HomeController>();
+      habitsSummary = home.habits
+          .map((h) => '${h.name} (streak: ${home.getStreak(h.id)})')
+          .join(', ');
+    } catch (_) {
+      // HomeController isn't registered yet — skip habit context this time.
+    }
+
     return {
       'time_of_day': DateTime.now().hour < 12 ? 'morning' : DateTime.now().hour < 17 ? 'afternoon' : 'evening',
       'mood': _aiService.moodInsight,
       'brain_type': prefs.getString('brain_type') ?? 'Not sure',
+      'goals': goals,
+      'habits_summary': habitsSummary,
+      'offline_mode': prefs.getBool('offline_mode') ?? false,
     };
   }
 

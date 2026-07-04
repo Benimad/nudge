@@ -11,10 +11,10 @@ class BodyDoublingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(BodyDoublingController());
+    final controller = Get.find<BodyDoublingController>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: ProGate(
           featureName: 'Body Doubling',
@@ -32,27 +32,27 @@ class BodyDoublingScreen extends StatelessWidget {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.colors.surface,
                           shape: BoxShape.circle,
-                          boxShadow: AppTheme.cardShadow,
+                          boxShadow: context.colors.cardShadow,
                         ),
-                        child: const Icon(Icons.chevron_left_rounded, color: AppTheme.textColor, size: 28),
+                        child: Icon(Icons.chevron_left_rounded, color: context.colors.text, size: 28),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEAF8F1),
+                        color: context.isDarkTheme ? const Color(0xFF16332A) : const Color(0xFFEAF8F1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.people_alt_outlined, color: AppTheme.checkGreen, size: 16),
+                          Icon(Icons.people_alt_outlined, color: context.colors.success, size: 16),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Body doubling session',
                             style: TextStyle(
-                              color: AppTheme.checkGreen,
+                              color: context.colors.success,
                               fontWeight: FontWeight.w600,
                               fontFamily: 'Inter',
                               fontSize: 13,
@@ -90,24 +90,25 @@ class BodyDoublingScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Start a focus session',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, fontFamily: 'Inter', color: context.colors.text),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Working with others helps ADHD brains stay on track.',
-            style: TextStyle(color: AppTheme.textVariantColor, fontFamily: 'Inter', fontSize: 15),
+            style: TextStyle(color: context.colors.textVariant, fontFamily: 'Inter', fontSize: 15),
           ),
           const SizedBox(height: 32),
-          const Text('What are you working on?', style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Inter')),
+          Text('What are you working on?', style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Inter', color: context.colors.text)),
           const SizedBox(height: 12),
           TextField(
             controller: taskController,
+            style: TextStyle(color: context.colors.text),
             decoration: InputDecoration(
               hintText: 'e.g. Cleaning the kitchen',
               filled: true,
-              fillColor: AppTheme.surfaceContainerColor,
+              fillColor: context.colors.surfaceContainer,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
@@ -115,7 +116,7 @@ class BodyDoublingScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          const Text('Session length', style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Inter')),
+          Text('Session length', style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Inter', color: context.colors.text)),
           const SizedBox(height: 12),
           StatefulBuilder(builder: (context, setState) {
             return Row(
@@ -127,16 +128,16 @@ class BodyDoublingScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primaryColor : Colors.white,
+                      color: isSelected ? context.colors.primary : context.colors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? AppTheme.primaryColor : AppTheme.outlineVariantColor,
+                        color: isSelected ? context.colors.primary : context.colors.outlineVariant,
                       ),
                     ),
                     child: Text(
                       '$mins',
                       style: TextStyle(
-                        color: isSelected ? Colors.white : AppTheme.textColor,
+                        color: isSelected ? Colors.white : context.colors.text,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Inter',
                       ),
@@ -157,7 +158,7 @@ class BodyDoublingScreen extends StatelessWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: context.colors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                 elevation: 0,
@@ -191,8 +192,8 @@ class BodyDoublingScreen extends StatelessWidget {
                       child: CircularProgressIndicator(
                         value: 1 - controller.progress,
                         strokeWidth: 12,
-                        backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                        valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                        backgroundColor: context.colors.primary.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
                         strokeCap: StrokeCap.round,
                       ),
                     ),
@@ -201,19 +202,19 @@ class BodyDoublingScreen extends StatelessWidget {
                       children: [
                         Text(
                           controller.formattedTime,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 64,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.primaryColor,
+                            color: context.colors.primary,
                             fontFamily: 'Inter',
                             letterSpacing: -2,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'time remaining',
                           style: TextStyle(
-                            color: AppTheme.textVariantColor,
+                            color: context.colors.textVariant,
                             fontSize: 16,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.w500,
@@ -225,50 +226,52 @@ class BodyDoublingScreen extends StatelessWidget {
                 ),
               ).animate().scale(begin: const Offset(0.9, 0.9), duration: 400.ms, curve: Curves.easeOutCubic),
               const SizedBox(height: 32),
-              
-              const Text(
+
+              Text(
                 'You\'re working on',
-                style: TextStyle(color: AppTheme.textVariantColor, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                style: TextStyle(color: context.colors.textVariant, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               Text(
                 controller.taskName.value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textColor,
+                  color: context.colors.text,
                   fontFamily: 'Inter',
                 ),
               ),
             ],
           ),
-          
+
           Column(
             children: [
               // Stats
               Row(
                 children: [
                   _buildStatCard(
+                    context: context,
                     icon: Icons.people_outline,
                     value: '${controller.communityCount.value}',
                     label: 'people\nworking',
                   ),
                   const SizedBox(width: 16),
                   _buildStatCard(
+                    context: context,
                     icon: Icons.bar_chart_rounded,
-                    value: '${controller.sessionsCompletedToday.value}', // Fake data for sessions today based on controller
+                    value: '${controller.sessionsCompletedToday.value}',
                     label: 'sessions\ntoday',
                   ),
                 ],
               ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
-              
+
               const SizedBox(height: 24),
-              
+
               // Motivational Card
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F1FC),
+                  color: context.colors.iconBubble,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -276,20 +279,20 @@ class BodyDoublingScreen extends StatelessWidget {
                     Container(
                       width: 48,
                       height: 48,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.primaryColor,
+                      decoration: BoxDecoration(
+                        color: context.colors.primary,
                         shape: BoxShape.circle,
                       ),
                       child: const BrainMascot(size: 32),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'You\'ve got this. Focus isn\'t about motivation — it\'s about showing up. We\'re here with you. 💜',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textColor,
+                          color: context.colors.text,
                           fontFamily: 'Inter',
                           height: 1.4,
                         ),
@@ -300,7 +303,7 @@ class BodyDoublingScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0),
             ],
           ),
-          
+
           // Controls
           Row(
             children: [
@@ -311,20 +314,20 @@ class BodyDoublingScreen extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => controller.pauseResumeSession(),
                     icon: Icon(
-                      controller.isPaused.value ? Icons.play_arrow_rounded : Icons.pause_rounded, 
-                      color: AppTheme.primaryColor,
+                      controller.isPaused.value ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                      color: context.colors.primary,
                     ),
                     label: Text(
                       controller.isPaused.value ? 'Resume' : 'Pause',
-                      style: const TextStyle(
-                        color: AppTheme.primaryColor, 
+                      style: TextStyle(
+                        color: context.colors.primary,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Inter',
                         fontSize: 16,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTheme.outlineVariantColor, width: 1.5),
+                      side: BorderSide(color: context.colors.outlineVariant, width: 1.5),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                     ),
                   ),
@@ -338,7 +341,7 @@ class BodyDoublingScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => _showEndConfirmation(context, controller),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
+                      backgroundColor: context.colors.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                       elevation: 0,
                     ),
@@ -361,43 +364,43 @@ class BodyDoublingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard({required IconData icon, required String value, required String label}) {
+  Widget _buildStatCard({required BuildContext context, required IconData icon, required String value, required String label}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: AppTheme.cardShadow,
+          boxShadow: context.colors.cardShadow,
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F1FC),
+                color: context.colors.iconBubble,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: AppTheme.primaryColor, size: 28),
+              child: Icon(icon, color: context.colors.primary, size: 28),
             ),
             const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  value, 
-                  style: const TextStyle(
-                    fontSize: 28, 
-                    fontWeight: FontWeight.w700, 
-                    color: AppTheme.primaryColor,
+                  value,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.primary,
                     fontFamily: 'Inter',
                   ),
                 ),
                 Text(
-                  label, 
-                  style: const TextStyle(
-                    fontSize: 12, 
-                    color: AppTheme.textVariantColor,
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.textVariant,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Inter',
                     height: 1.2,
@@ -420,14 +423,14 @@ class BodyDoublingScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Keep going', style: TextStyle(color: AppTheme.primaryColor, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+            child: Text('Keep going', style: TextStyle(color: context.colors.primary, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
           ),
           TextButton(
             onPressed: () {
               controller.endSession();
               Navigator.pop(context);
             },
-            child: const Text('End now', style: TextStyle(color: AppTheme.textVariantColor, fontFamily: 'Inter')),
+            child: Text('End now', style: TextStyle(color: context.colors.textVariant, fontFamily: 'Inter')),
           ),
         ],
       ),

@@ -50,13 +50,32 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase with the Google credential
-      final cred = await _auth.signInWithCredential(credential);
-      
+      UserCredential cred;
+      final existingUser = _auth.currentUser;
+      if (existingUser != null && existingUser.isAnonymous) {
+        // Preserve the anonymous UID by linking Google onto it, rather than
+        // replacing it — Firestore data and the RevenueCat entitlement are
+        // both keyed by uid, so swapping identities here would orphan them.
+        try {
+          cred = await existingUser.linkWithCredential(credential);
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'credential-already-in-use') {
+            // This Google account is already tied to a different Firebase
+            // user (e.g. signed in on another device before). Fall back to
+            // that existing account instead of failing the sign-in.
+            cred = await _auth.signInWithCredential(credential);
+          } else {
+            rethrow;
+          }
+        }
+      } else {
+        cred = await _auth.signInWithCredential(credential);
+      }
+
       if (cred.user != null) {
         await _syncIdentity(cred.user!.uid);
       }
-      
+
       return cred;
     } catch (e) {
       throw Exception('Google Sign-In failed: $e');

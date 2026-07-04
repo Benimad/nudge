@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: context.colors.background,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 62,
                 child: FloatingActionButton(
                   onPressed: () => _showAddHabitSheet(context),
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: context.colors.primary,
                   elevation: 0,
                   highlightElevation: 0,
                   shape: const CircleBorder(),
@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -87,15 +87,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Row(
-        children: List.generate(_navItems.length, (i) => Expanded(child: _buildNavItem(i))),
+        children: List.generate(_navItems.length, (i) => Expanded(child: _buildNavItem(context, i))),
       ),
     ).animate().slideY(begin: 1, end: 0, duration: 600.ms, curve: Curves.easeOutBack);
   }
 
-  Widget _buildNavItem(int index) {
+  Widget _buildNavItem(BuildContext context, int index) {
     final item = _navItems[index];
     final isSelected = _currentIndex == index;
-    final color = isSelected ? AppTheme.primaryColor : AppTheme.inactiveGray;
+    final color = isSelected ? context.colors.primary : context.colors.inactiveGray;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
@@ -142,7 +142,7 @@ class _HomeBody extends StatelessWidget {
     final controller = Get.find<HomeController>();
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -161,12 +161,12 @@ class _HomeBody extends StatelessWidget {
 
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-              child: const Text(
+              child: Text(
                 "Today's habits",
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textColor,
+                  color: context.colors.text,
                   letterSpacing: -0.3,
                   fontFamily: 'Inter',
                 ),
@@ -176,7 +176,7 @@ class _HomeBody extends StatelessWidget {
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+                  return Center(child: CircularProgressIndicator(color: context.colors.primary));
                 }
 
                 if (controller.habits.isEmpty) {
@@ -206,16 +206,16 @@ class _HomeBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.spa_outlined, size: 64, color: Colors.grey.shade300),
+          Icon(Icons.spa_outlined, size: 64, color: context.colors.outlineVariant),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Add your first habit',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textColor, fontFamily: 'Quicksand'),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.colors.text, fontFamily: 'Quicksand'),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Start with just one small step',
-            style: TextStyle(color: AppTheme.textVariantColor, fontFamily: 'Quicksand'),
+            style: TextStyle(color: context.colors.textVariant, fontFamily: 'Quicksand'),
           ),
           const SizedBox(height: 24),
           ElevatedButton(

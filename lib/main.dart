@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'core/database/database_helper.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/services/firebase_service.dart';
+import 'core/services/auth_service.dart';
 import 'features/settings/services/subscription_service.dart';
 import 'features/onboarding/screens/welcome_screen.dart';
 import 'features/onboarding/screens/goals_screen.dart';
@@ -12,6 +13,7 @@ import 'features/onboarding/screens/reminder_setup_screen.dart';
 import 'features/ai_coach/controllers/chat_controller.dart';
 import 'features/habits/controllers/home_controller.dart';
 import 'features/habits/screens/home_screen.dart';
+import 'features/body_doubling/controllers/body_doubling_controller.dart';
 import 'features/paralysis_mode/screens/paralysis_mode_screen.dart';
 import 'features/body_doubling/screens/body_doubling_screen.dart';
 import 'features/ai_coach/screens/ai_coach_screen.dart';
@@ -26,6 +28,16 @@ void main() async {
   final firebaseInitialized = await FirebaseService.initialize();
   if (!firebaseInitialized) {
     debugPrint('⚠️ App running without Firebase - some features may be limited');
+  } else {
+    // Every user needs a Firebase identity for Firestore sync to have
+    // somewhere to write, whether or not they ever tap "Sign in with Google".
+    try {
+      if (AuthService().currentUser == null) {
+        await AuthService().signInAnonymously();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Anonymous sign-in error: $e');
+    }
   }
 
   // Initialize Database
@@ -52,9 +64,11 @@ void main() async {
     debugPrint('⚠️ Notification init error: $e');
   }
 
-  // Initialize controllers globally so IndexedStack children can find them
+  // Initialize controllers globally so IndexedStack children can find them,
+  // and so a running focus-session timer survives navigating away from it.
   Get.put(HomeController(), permanent: true);
   Get.put(ChatController(), permanent: true);
+  Get.put(BodyDoublingController(), permanent: true);
 
   runApp(const NudgeApp());
 }
@@ -71,11 +85,20 @@ class _NudgeAppState extends State<NudgeApp> {
   bool _reduceAnimations = false;
   bool _highContrast = false;
   bool _isLoading = true;
+  String _initialRoute = '/onboarding/welcome';
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  void _registerActivity() {
+    try {
+      Get.find<HomeController>().resetParalysisTimer();
+    } catch (_) {
+      // HomeController isn't registered yet (very first frame) — ignore.
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -85,6 +108,9 @@ class _NudgeAppState extends State<NudgeApp> {
         _textScale = (prefs.getBool('large_text') ?? false) ? 1.2 : 1.0;
         _reduceAnimations = prefs.getBool('sensory_safe_ui') ?? false;
         _highContrast = prefs.getBool('high_contrast') ?? false;
+        _initialRoute = (prefs.getBool('onboarding_complete') ?? false)
+            ? '/home'
+            : '/onboarding/welcome';
         _isLoading = false;
       });
     }
@@ -115,13 +141,19 @@ class _NudgeAppState extends State<NudgeApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       navigatorKey: Get.key,
+      initialRoute: _initialRoute,
       builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(_textScale),
-            disableAnimations: _reduceAnimations,
+        return Listener(
+          onPointerDown: (_) => _registerActivity(),
+          onPointerMove: (_) => _registerActivity(),
+          behavior: HitTestBehavior.translucent,
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(_textScale),
+              disableAnimations: _reduceAnimations,
+            ),
+            child: child!,
           ),
-          child: child!,
         );
       },
       getPages: [

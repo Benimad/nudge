@@ -48,9 +48,9 @@ class _HabitListItemState extends State<HabitListItem> {
               margin: const EdgeInsets.only(bottom: 14),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               decoration: BoxDecoration(
-                color: isCompleted ? AppTheme.completedCardColor : Colors.white,
+                color: isCompleted ? context.colors.completedCard : context.colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: isCompleted ? [] : AppTheme.cardShadow,
+                boxShadow: isCompleted ? [] : context.colors.cardShadow,
               ),
               child: Row(
                 children: [
@@ -66,9 +66,9 @@ class _HabitListItemState extends State<HabitListItem> {
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
                             letterSpacing: -0.2,
-                            color: isCompleted ? AppTheme.outlineColor : AppTheme.textColor,
+                            color: isCompleted ? context.colors.outline : context.colors.text,
                             decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                            decorationColor: AppTheme.outlineColor,
+                            decorationColor: context.colors.outline,
                             decorationThickness: 1.6,
                             fontFamily: 'Inter',
                           ),
@@ -77,10 +77,10 @@ class _HabitListItemState extends State<HabitListItem> {
                         const SizedBox(height: 5),
                         Text(
                           _streakLabel(controller.getStreak(widget.habit.id), widget.habit.createdAt),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textVariantColor,
+                            color: context.colors.textVariant,
                             fontFamily: 'Inter',
                           ),
                         ),
@@ -88,7 +88,7 @@ class _HabitListItemState extends State<HabitListItem> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.chevron_right_rounded, color: Color(0xFFB9B9C0), size: 26),
+                  Icon(Icons.chevron_right_rounded, color: context.colors.outlineVariant, size: 26),
                 ],
               ),
             ),

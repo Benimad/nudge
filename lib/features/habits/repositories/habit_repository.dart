@@ -157,6 +157,17 @@ class HabitRepository {
     return uniqueHabitIds.length / activeHabits.length;
   }
 
+  /// Average daily completion rate across an inclusive date range, used to
+  /// bucket the stats chart into weeks/months for longer time ranges.
+  Future<double> getAverageCompletionRateForRange(DateTime start, DateTime end) async {
+    final dayCount = end.difference(start).inDays + 1;
+    if (dayCount <= 0) return 0.0;
+    final rates = await Future.wait(
+      List.generate(dayCount, (i) => getCompletionRateForDate(start.add(Duration(days: i)))),
+    );
+    return rates.reduce((a, b) => a + b) / rates.length;
+  }
+
   Future<int> getTotalWins() async {
     final db = await _dbHelper.database;
     final result = await db.rawQuery('SELECT COUNT(*) as count FROM completions');

@@ -16,18 +16,27 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   final HabitRepository _repository = HabitRepository();
-  late Future<List<Map<String, dynamic>>> _statsFuture;
+  late Future<Map<String, dynamic>> _overallStatsFuture;
+  late Future<Map<String, dynamic>> _chartFuture;
   String _aiInsight = '';
   String _selectedTimeRange = 'Week';
+
+  static const List<String> _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  static const List<String> _monthLabels = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
 
   @override
   void initState() {
     super.initState();
-    _statsFuture = _fetchStats();
+    _overallStatsFuture = _fetchOverallStats();
+    _chartFuture = _fetchChartData(_selectedTimeRange);
     _loadAiInsight();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchStats() async {
+  /// Metrics that describe overall/current-week standing regardless of which
+  /// chart range is selected — these never change when the toggle is tapped.
+  Future<Map<String, dynamic>> _fetchOverallStats() async {
     final now = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
     final weekFutures = List.generate(7, (i) => _repository.getCompletionRateForDate(monday.add(Duration(days: i))));
@@ -35,10 +44,46 @@ class _StatsScreenState extends State<StatsScreen> {
     final weekData = await Future.wait(weekFutures);
     final totalWins = await _repository.getTotalWins();
     final bestStreak = await _getBestStreak();
+    final weekCompletion = weekData.reduce((a, b) => a + b) / weekData.length;
 
-    return [
-      {'weekData': weekData, 'totalWins': totalWins, 'bestStreak': bestStreak},
-    ];
+    return {'weekCompletion': weekCompletion, 'totalWins': totalWins, 'bestStreak': bestStreak};
+  }
+
+  /// Chart data + x-axis labels for the selected time range. Week shows 7
+  /// daily rates; Month buckets the last 4 weeks; 3 Months/Year bucket by
+  /// calendar month.
+  Future<Map<String, dynamic>> _fetchChartData(String range) async {
+    final now = DateTime.now();
+
+    if (range == 'Month') {
+      final data = <double>[];
+      for (int i = 3; i >= 0; i--) {
+        final bucketEnd = now.subtract(Duration(days: i * 7));
+        final bucketStart = bucketEnd.subtract(const Duration(days: 6));
+        data.add(await _repository.getAverageCompletionRateForRange(bucketStart, bucketEnd));
+      }
+      return {'data': data, 'labels': ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4']};
+    }
+
+    if (range == '3 Months' || range == 'Year') {
+      final monthCount = range == 'Year' ? 12 : 3;
+      final data = <double>[];
+      final labels = <String>[];
+      for (int i = monthCount - 1; i >= 0; i--) {
+        final monthDate = DateTime(now.year, now.month - i, 1);
+        final monthStart = DateTime(monthDate.year, monthDate.month, 1);
+        final monthEnd = DateTime(monthDate.year, monthDate.month + 1, 0);
+        data.add(await _repository.getAverageCompletionRateForRange(monthStart, monthEnd));
+        labels.add(_monthLabels[monthDate.month - 1]);
+      }
+      return {'data': data, 'labels': labels};
+    }
+
+    // Week (default)
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final weekFutures = List.generate(7, (i) => _repository.getCompletionRateForDate(monday.add(Duration(days: i))));
+    final data = await Future.wait(weekFutures);
+    return {'data': data, 'labels': _weekdayLabels};
   }
 
   Future<int> _getBestStreak() async {
@@ -70,15 +115,14 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: FutureBuilder(
-          future: _statsFuture,
-          builder: (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
-            final weekData = (snapshot.data?[0]['weekData'] as List<double>?) ?? List.filled(7, 0.0);
-            final totalWins = (snapshot.data?[0]['totalWins'] as int?) ?? 0;
-            final bestStreak = (snapshot.data?[0]['bestStreak'] as int?) ?? 0;
-            final weekCompletion = weekData.isNotEmpty ? weekData.reduce((a, b) => a + b) / weekData.length : 0.0;
+          future: _overallStatsFuture,
+          builder: (context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
+            final totalWins = (snapshot.data?['totalWins'] as int?) ?? 0;
+            final bestStreak = (snapshot.data?['bestStreak'] as int?) ?? 0;
+            final weekCompletion = (snapshot.data?['weekCompletion'] as double?) ?? 0.0;
 
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -92,17 +136,17 @@ class _StatsScreenState extends State<StatsScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.bar_chart_rounded, color: AppTheme.primaryColor, size: 28),
+                          Icon(Icons.bar_chart_rounded, color: context.colors.primary, size: 28),
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                            children: [
                               Text(
                                 'Your progress',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.textColor,
+                                  color: context.colors.text,
                                   fontFamily: 'Inter',
                                   letterSpacing: -0.5,
                                 ),
@@ -112,7 +156,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.textVariantColor,
+                                  color: context.colors.textVariant,
                                   fontFamily: 'Inter',
                                 ),
                               ),
@@ -124,98 +168,114 @@ class _StatsScreenState extends State<StatsScreen> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.colors.surface,
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.outlineVariantColor, width: 1.5),
+                          border: Border.all(color: context.colors.outlineVariant, width: 1.5),
                         ),
-                        child: const Icon(Icons.filter_alt_outlined, color: AppTheme.textColor, size: 22),
+                        child: Icon(Icons.filter_alt_outlined, color: context.colors.text, size: 22),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Top Metric Cards
                   Row(
                     children: [
                       _buildMetricCard(
-                        value: '${(weekCompletion * 100).toInt()}%', 
-                        label1: 'this week', 
-                        label2: 'completion rate', 
-                        icon: Icons.track_changes_rounded, 
-                        color: AppTheme.primaryColor,
-                        bgColor: const Color(0xFFF4F1FC),
+                        context: context,
+                        value: '${(weekCompletion * 100).toInt()}%',
+                        label1: 'this week',
+                        label2: 'completion rate',
+                        icon: Icons.track_changes_rounded,
+                        color: context.colors.primary,
+                        bgColor: context.colors.iconBubble,
                       ),
                       const SizedBox(width: 12),
                       _buildMetricCard(
-                        value: '$bestStreak', 
-                        label1: 'best streak', 
-                        label2: 'days in a row', 
-                        icon: Icons.local_fire_department_rounded, 
-                        color: AppTheme.checkGreen,
-                        bgColor: const Color(0xFFEAF8F1),
+                        context: context,
+                        value: '$bestStreak',
+                        label1: 'best streak',
+                        label2: 'days in a row',
+                        icon: Icons.local_fire_department_rounded,
+                        color: context.colors.success,
+                        bgColor: context.isDarkTheme ? const Color(0xFF16332A) : const Color(0xFFEAF8F1),
                       ),
                       const SizedBox(width: 12),
                       _buildMetricCard(
-                        value: '$totalWins', 
-                        label1: 'total wins', 
-                        label2: 'all-time', 
-                        icon: Icons.emoji_events_rounded, 
-                        color: const Color(0xFFFFA000),
-                        bgColor: const Color(0xFFFFF6E5),
+                        context: context,
+                        value: '$totalWins',
+                        label1: 'total wins',
+                        label2: 'all-time',
+                        icon: Icons.emoji_events_rounded,
+                        color: context.colors.warning,
+                        bgColor: context.isDarkTheme ? const Color(0xFF3A2E12) : const Color(0xFFFFF6E5),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Chart Card
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.colors.surface,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: AppTheme.cardShadow,
+                      boxShadow: context.colors.cardShadow,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Habits completed this week',
+                        Text(
+                          'Habits completed — $_selectedTimeRange',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             fontFamily: 'Inter',
-                            color: AppTheme.textColor,
+                            color: context.colors.text,
                           ),
                         ),
                         const SizedBox(height: 24),
-                        _buildWeeklyChart(weekData),
+                        FutureBuilder<Map<String, dynamic>>(
+                          future: _chartFuture,
+                          builder: (context, chartSnapshot) {
+                            final data = (chartSnapshot.data?['data'] as List<double>?) ?? const [];
+                            final labels = (chartSnapshot.data?['labels'] as List<String>?) ?? const [];
+                            if (data.isEmpty) {
+                              return const SizedBox(height: 180);
+                            }
+                            return _buildWeeklyChart(context, data, labels);
+                          },
+                        ),
                         const SizedBox(height: 16),
-                        
+
                         // Legend
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildLegendItem('Peak days', AppTheme.primaryColor),
+                            _buildLegendItem(context, 'Peak days', context.colors.primary),
                             const SizedBox(width: 24),
-                            _buildLegendItem('Other days', const Color(0xFF98E2BB)),
+                            _buildLegendItem(context, 'Other days', const Color(0xFF98E2BB)),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // Time range toggle
                         Row(
                           children: ['Week', 'Month', '3 Months', 'Year'].map((range) {
                             final isSelected = range == _selectedTimeRange;
                             return Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => _selectedTimeRange = range),
+                                onTap: () => setState(() {
+                                  _selectedTimeRange = range;
+                                  _chartFuture = _fetchChartData(range);
+                                }),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                                    color: isSelected ? context.colors.primary : Colors.transparent,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   alignment: Alignment.center,
@@ -224,7 +284,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                      color: isSelected ? Colors.white : AppTheme.textVariantColor,
+                                      color: isSelected ? Colors.white : context.colors.textVariant,
                                       fontFamily: 'Inter',
                                     ),
                                   ),
@@ -236,12 +296,12 @@ class _StatsScreenState extends State<StatsScreen> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // AI Insight Card
-                  _buildAiInsightCard(),
-                  
+                  _buildAiInsightCard(context),
+
                   const SizedBox(height: 24),
                 ],
               ),
@@ -253,20 +313,21 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildMetricCard({
-    required String value, 
-    required String label1, 
-    required String label2, 
-    required IconData icon, 
-    required Color color, 
+    required BuildContext context,
+    required String value,
+    required String label1,
+    required String label2,
+    required IconData icon,
+    required Color color,
     required Color bgColor,
   }) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: AppTheme.cardShadow,
+          boxShadow: context.colors.cardShadow,
         ),
         child: Column(
           children: [
@@ -292,19 +353,19 @@ class _StatsScreenState extends State<StatsScreen> {
             const SizedBox(height: 4),
             Text(
               label1,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: context.colors.text,
                 fontFamily: 'Inter',
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label2,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.textVariantColor,
+                color: context.colors.textVariant,
                 fontFamily: 'Inter',
               ),
             ),
@@ -314,7 +375,7 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(BuildContext context, String label, Color color) {
     return Row(
       children: [
         Container(
@@ -328,10 +389,10 @@ class _StatsScreenState extends State<StatsScreen> {
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textVariantColor,
+            color: context.colors.textVariant,
             fontFamily: 'Inter',
           ),
         ),
@@ -339,9 +400,9 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildWeeklyChart(List<double> data) {
-    // Generate dummy visually appealing data similar to mockup if actual data is flat
-    final displayData = [0.55, 0.65, 0.95, 0.92, 0.60, 0.45, 0.35]; 
+  Widget _buildWeeklyChart(BuildContext context, List<double> data, List<String> labels) {
+    final displayData = data;
+    final maxValue = displayData.reduce((a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 180,
@@ -356,7 +417,7 @@ class _StatsScreenState extends State<StatsScreen> {
             horizontalInterval: 0.25,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: AppTheme.outlineVariantColor.withValues(alpha: 0.5),
+                color: context.colors.outlineVariant.withValues(alpha: 0.5),
                 strokeWidth: 1,
                 dashArray: [4, 4],
               );
@@ -377,9 +438,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     padding: const EdgeInsets.only(right: 8),
                     child: Text(
                       '${(value * 100).toInt()}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.textVariantColor,
+                        color: context.colors.textVariant,
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -391,14 +452,15 @@ class _StatsScreenState extends State<StatsScreen> {
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
-                  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                  final idx = value.toInt();
+                  if (idx < 0 || idx >= labels.length) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      days[value.toInt()],
-                      style: const TextStyle(
+                      labels[idx],
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textVariantColor,
+                        color: context.colors.textVariant,
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -407,14 +469,14 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
             ),
           ),
-          barGroups: List.generate(7, (index) {
-            final isPeak = index == 2 || index == 3; // Wed, Thu
+          barGroups: List.generate(displayData.length, (index) {
+            final isPeak = maxValue > 0 && displayData[index] == maxValue;
             return BarChartGroupData(
               x: index,
               barRods: [
                 BarChartRodData(
                   toY: displayData[index],
-                  color: isPeak ? AppTheme.primaryColor : const Color(0xFF98E2BB),
+                  color: isPeak ? context.colors.primary : const Color(0xFF98E2BB),
                   width: 18,
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -426,11 +488,11 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildAiInsightCard() {
+  Widget _buildAiInsightCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F1FC),
+        color: context.colors.iconBubble,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -441,32 +503,32 @@ class _StatsScreenState extends State<StatsScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primaryColor,
+                decoration: BoxDecoration(
+                  color: context.colors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: const BrainMascot(size: 24),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'AI insight',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                   fontFamily: 'Inter',
-                  color: AppTheme.primaryColor,
+                  color: context.colors.primary,
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.auto_awesome, color: AppTheme.primaryColor, size: 20),
+              Icon(Icons.auto_awesome, color: context.colors.primary, size: 20),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             _aiInsight.isNotEmpty ? _aiInsight : 'You complete 2x more habits on Wednesdays compared to your weekend average. That midweek momentum is your superpower.',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
-              color: AppTheme.textColor,
+              color: context.colors.text,
               fontFamily: 'Inter',
               height: 1.4,
               fontWeight: FontWeight.w500,

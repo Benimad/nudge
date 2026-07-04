@@ -125,6 +125,40 @@ class DatabaseHelper {
     );
   }
 
+  Future<void> insertFocusSession({
+    required int durationSeconds,
+    String? taskName,
+  }) async {
+    final db = await instance.database;
+    await db.insert('focus_sessions', {
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'duration': durationSeconds,
+      'taskName': taskName,
+      'startedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<int> getTotalFocusMinutesSince(DateTime since) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      'SELECT SUM(duration) as total FROM focus_sessions WHERE startedAt >= ?',
+      [since.toIso8601String()],
+    );
+    final totalSeconds = Sqflite.firstIntValue(result) ?? 0;
+    return totalSeconds ~/ 60;
+  }
+
+  Future<int> getSessionsCountForDate(DateTime date) async {
+    final db = await instance.database;
+    final start = DateTime(date.year, date.month, date.day).toIso8601String();
+    final end = DateTime(date.year, date.month, date.day, 23, 59, 59).toIso8601String();
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM focus_sessions WHERE startedAt BETWEEN ? AND ?',
+      [start, end],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
   Future close() async {
     final db = await instance.database;
     db.close();

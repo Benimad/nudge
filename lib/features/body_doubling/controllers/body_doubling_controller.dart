@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../habits/controllers/home_controller.dart';
+import '../../../core/database/database_helper.dart';
 
 class BodyDoublingController extends GetxController {
   var isSessionActive = false.obs;
@@ -17,7 +18,7 @@ class BodyDoublingController extends GetxController {
   Timer? _communityTimer;
   
   var sessionsCompletedToday = 0.obs;
-  var totalFocusMinutesWeek = 120.obs;
+  var totalFocusMinutesWeek = 0.obs;
 
   var currentEncouragement = ''.obs;
   var showEncouragement = false.obs;
@@ -27,6 +28,17 @@ class BodyDoublingController extends GetxController {
   void onInit() {
     super.onInit();
     _startCommunityTimer();
+    _loadFocusStats();
+  }
+
+  Future<void> _loadFocusStats() async {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final weekStart = DateTime(monday.year, monday.month, monday.day);
+    totalFocusMinutesWeek.value =
+        await DatabaseHelper.instance.getTotalFocusMinutesSince(weekStart);
+    sessionsCompletedToday.value =
+        await DatabaseHelper.instance.getSessionsCountForDate(now);
   }
 
   @override
@@ -77,14 +89,19 @@ class BodyDoublingController extends GetxController {
     });
   }
 
-  void _completeSession() {
+  void _completeSession() async {
     _timer?.cancel();
     isSessionActive.value = false;
     isPaused.value = false;
     sessionsCompletedToday.value++;
     int minutes = totalSeconds.value ~/ 60;
     totalFocusMinutesWeek.value += minutes;
-    
+
+    await DatabaseHelper.instance.insertFocusSession(
+      durationSeconds: totalSeconds.value,
+      taskName: taskName.value,
+    );
+
     // Add dopamine points (50 bonus)
     Get.find<HomeController>().addPoints(50);
     

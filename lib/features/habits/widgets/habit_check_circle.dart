@@ -58,8 +58,8 @@ class _HabitCheckCircleState extends State<HabitCheckCircle> with SingleTickerPr
       animation: _controller,
       builder: (context, _) {
         final t = _controller.value;
-        final fillColor = Color.lerp(Colors.white, AppTheme.checkGreen, t)!;
-        final borderColor = Color.lerp(const Color(0xFFD6D6DC), AppTheme.checkGreen, t)!;
+        final fillColor = Color.lerp(context.colors.surface, context.colors.success, t)!;
+        final borderColor = Color.lerp(context.colors.outlineVariant, context.colors.success, t)!;
         return Transform.scale(
           scale: _scale.value,
           child: Container(

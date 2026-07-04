@@ -27,10 +27,10 @@ class ProgressHeader extends StatelessWidget {
                   children: [
                     Text(
                       '${controller.greeting}! 👋',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textColor,
+                        color: context.colors.text,
                         letterSpacing: -0.5,
                         fontFamily: 'Inter',
                       ),
@@ -38,10 +38,10 @@ class ProgressHeader extends StatelessWidget {
                     const SizedBox(height: 6),
                     Obx(() => Text(
                           '$dateStr • ${controller.habits.length} habit${controller.habits.length == 1 ? '' : 's'}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textVariantColor,
+                            color: context.colors.textVariant,
                             fontFamily: 'Inter',
                           ),
                         )).animate().fadeIn(duration: 450.ms, delay: 100.ms),
@@ -61,19 +61,19 @@ class ProgressHeader extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: AppTheme.cardShadow,
+              boxShadow: context.colors.cardShadow,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Today's progress",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textColor,
+                    color: context.colors.text,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -91,8 +91,8 @@ class ProgressHeader extends StatelessWidget {
                                 return LinearProgressIndicator(
                                   value: value,
                                   minHeight: 10,
-                                  backgroundColor: const Color(0xFFEBEBEA),
-                                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.checkGreen),
+                                  backgroundColor: context.colors.divider,
+                                  valueColor: AlwaysStoppedAnimation<Color>(context.colors.success),
                                 );
                               },
                             )),
@@ -101,10 +101,10 @@ class ProgressHeader extends StatelessWidget {
                     const SizedBox(width: 14),
                     Obx(() => Text(
                           '${(controller.todayProgress.value * 100).toInt()}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.checkGreen,
+                            color: context.colors.success,
                             fontFamily: 'Inter',
                           ),
                         )),
@@ -134,14 +134,14 @@ class _NotificationBell extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           shape: BoxShape.circle,
-          boxShadow: AppTheme.cardShadow,
+          boxShadow: context.colors.cardShadow,
         ),
         child: Stack(
           children: [
-            const Center(
-              child: Icon(Icons.notifications_none_rounded, color: AppTheme.textColor, size: 24),
+            Center(
+              child: Icon(Icons.notifications_none_rounded, color: context.colors.text, size: 24),
             ),
             Positioned(
               top: 10,
@@ -149,7 +149,7 @@ class _NotificationBell extends StatelessWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: context.colors.primary, shape: BoxShape.circle),
               ),
             ),
           ],

@@ -56,7 +56,7 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
         'All steps done!',
         'Your "${_selectedHabit!.name}" habit is complete 🎉',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppTheme.checkGreen,
+        backgroundColor: context.colors.success,
         colorText: Colors.white,
       );
       setState(() {
@@ -94,7 +94,7 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -112,11 +112,11 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.colors.surface,
                           shape: BoxShape.circle,
-                          boxShadow: AppTheme.cardShadow,
+                          boxShadow: context.colors.cardShadow,
                         ),
-                        child: const Icon(Icons.chevron_left_rounded, color: AppTheme.textColor, size: 30),
+                        child: Icon(Icons.chevron_left_rounded, color: context.colors.text, size: 30),
                       ),
                     ).animate().fadeIn(duration: 350.ms).scale(begin: const Offset(0.7, 0.7), curve: Curves.easeOutBack),
                   ),
@@ -160,15 +160,15 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
             
             const SizedBox(height: 12),
             
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
                 'It\'s okay — let\'s make this easier.\nFind one tiny task to get momentum.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textVariantColor,
+                  color: context.colors.textVariant,
                   fontFamily: 'Inter',
                   height: 1.4,
                 ),
@@ -192,19 +192,19 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEFECFA),
+                            color: context.colors.iconBubble,
                             borderRadius: const BorderRadius.only(
                               topRight: Radius.circular(20),
                               bottomLeft: Radius.circular(20),
                               bottomRight: Radius.circular(20),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'I notice you\'ve been inactive for 40 min.\n\nWant me to break your task into micro-steps?',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: AppTheme.textColor,
+                              color: context.colors.text,
                               fontFamily: 'Inter',
                               height: 1.4,
                             ),
@@ -223,7 +223,7 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                     child: ElevatedButton(
                       onPressed: _showTaskSelector,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: context.colors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                         elevation: 0,
@@ -242,14 +242,14 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                   const SizedBox(height: 32),
                   
                   if (_isLoadingAi)
-                    const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                    Center(child: CircularProgressIndicator(color: context.colors.primary))
                   else if (_microSteps != null) ...[
-                    const Text(
+                    Text(
                       'Try one of these micro-steps',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor,
+                        color: context.colors.text,
                         fontFamily: 'Inter',
                       ),
                     ).animate().fadeIn(),
@@ -266,15 +266,15 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.colors.surface,
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: AppTheme.cardShadow,
+                            boxShadow: context.colors.cardShadow,
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                isChecked ? Icons.check_circle_rounded : Icons.schedule_rounded, 
-                                color: AppTheme.primaryColor, 
+                                isChecked ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                                color: context.colors.primary,
                                 size: 32,
                               ),
                               const SizedBox(width: 16),
@@ -287,7 +287,7 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: isChecked ? AppTheme.outlineColor : AppTheme.textColor,
+                                        color: isChecked ? context.colors.outline : context.colors.text,
                                         decoration: isChecked ? TextDecoration.lineThrough : null,
                                         fontFamily: 'Inter',
                                       ),
@@ -298,14 +298,14 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
-                                        color: isChecked ? AppTheme.outlineColor : AppTheme.primaryColor,
+                                        color: isChecked ? context.colors.outline : context.colors.primary,
                                         fontFamily: 'Inter',
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.chevron_right_rounded, color: AppTheme.outlineVariantColor, size: 24),
+                              Icon(Icons.chevron_right_rounded, color: context.colors.outlineVariant, size: 24),
                             ],
                           ),
                         ),
@@ -317,12 +317,12 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF4F1FC),
+                        color: context.colors.iconBubble,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.auto_awesome, color: AppTheme.primaryColor, size: 28),
+                          Icon(Icons.auto_awesome, color: context.colors.primary, size: 28),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
@@ -330,7 +330,7 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textVariantColor,
+                                color: context.colors.textVariant,
                                 fontFamily: 'Inter',
                                 height: 1.4,
                               ),

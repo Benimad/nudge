@@ -68,6 +68,9 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
         transitionWarningMinutes: 10,
       );
       await NotificationService().requestPermission();
+      if (!await NotificationService().canScheduleExactAlarms()) {
+        await NotificationService().requestExactAlarmPermission();
+      }
     } catch (e) {
       debugPrint('Failed to schedule onboarding reminders: $e');
     }
@@ -84,7 +87,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -96,21 +99,21 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Set gentle reminders',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textColor,
+                color: context.colors.text,
                 fontFamily: 'Quicksand',
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'No red badges. Soft nudges only.',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textVariantColor,
+                color: context.colors.textVariant,
                 fontFamily: 'Quicksand',
               ),
             ),
@@ -118,6 +121,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
 
             // Morning reminder
             _buildTimePicker(
+              context: context,
               label: 'Morning reminder',
               icon: Icons.wb_sunny_outlined,
               time: _morningTime,
@@ -127,6 +131,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
 
             // Evening review
             _buildTimePicker(
+              context: context,
               label: 'Evening review',
               icon: Icons.nightlight_round,
               time: _eveningTime,
@@ -138,9 +143,9 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: AppTheme.cardShadow,
+                boxShadow: context.colors.cardShadow,
               ),
               child: Row(
                 children: [
@@ -148,20 +153,21 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Snooze-friendly reminders',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
                             fontFamily: 'Quicksand',
+                            color: context.colors.text,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Never disappear until you check them',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.textVariantColor,
+                            color: context.colors.textVariant,
                             fontFamily: 'Quicksand',
                           ),
                         ),
@@ -171,8 +177,8 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                   Switch(
                     value: _snoozeFriendly,
                     onChanged: (val) => setState(() => _snoozeFriendly = val),
-                    activeTrackColor: AppTheme.primaryColor.withValues(alpha: 0.5),
-                    activeThumbColor: AppTheme.primaryColor,
+                    activeTrackColor: context.colors.primary.withValues(alpha: 0.5),
+                    activeThumbColor: context.colors.primary,
                   ),
                 ],
               ),
@@ -187,7 +193,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
               child: ElevatedButton(
                 onPressed: _onContinue,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: context.colors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -211,7 +217,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                 child: Text(
                   'Set up later',
                   style: TextStyle(
-                    color: AppTheme.textVariantColor,
+                    color: context.colors.textVariant,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Quicksand',
                   ),
@@ -226,6 +232,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
   }
 
   Widget _buildTimePicker({
+    required BuildContext context,
     required String label,
     required IconData icon,
     required TimeOfDay time,
@@ -236,35 +243,36 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: AppTheme.cardShadow,
+          boxShadow: context.colors.cardShadow,
         ),
         child: Row(
           children: [
-            Icon(icon, color: AppTheme.primaryColor, size: 24),
+            Icon(icon, color: context.colors.primary, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
                   fontFamily: 'Quicksand',
+                  color: context.colors.text,
                 ),
               ),
             ),
             Text(
               time.format(context),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textColor,
+                color: context.colors.text,
                 fontFamily: 'Quicksand',
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: AppTheme.textVariantColor, size: 20),
+            Icon(Icons.chevron_right, color: context.colors.textVariant, size: 20),
           ],
         ),
       ),
