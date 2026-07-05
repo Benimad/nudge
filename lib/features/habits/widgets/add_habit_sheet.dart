@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../models/habit_model.dart';
 import '../controllers/home_controller.dart';
@@ -43,6 +44,7 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
   void _saveHabit() {
     final trimmedName = _nameController.text.trim();
     if (trimmedName.isEmpty) return;
+    HapticFeedback.mediumImpact();
 
     final habit = HabitModel(
       id: widget.habit?.id,

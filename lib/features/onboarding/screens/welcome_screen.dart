@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -141,7 +142,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             label: label,
                             icon: icon,
                             isSelected: isSelected,
-                            onTap: () => setState(() => _selectedBrainType = label),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _selectedBrainType = label);
+                            },
                           ),
                         )
                             .animate()

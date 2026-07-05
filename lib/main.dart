@@ -6,6 +6,7 @@ import 'core/database/database_helper.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/auth_service.dart';
+import 'core/services/analytics_service.dart';
 import 'features/settings/services/subscription_service.dart';
 import 'features/splash/screens/splash_screen.dart';
 import 'features/onboarding/screens/welcome_screen.dart';
@@ -63,6 +64,13 @@ void main() async {
     debugPrint('✅ Notifications initialized');
   } catch (e) {
     debugPrint('⚠️ Notification init error: $e');
+  }
+
+  // Initialize Analytics (no-op unless POSTHOG_API_KEY is dart-defined)
+  try {
+    await AnalyticsService.init();
+  } catch (e) {
+    debugPrint('⚠️ Analytics init error: $e');
   }
 
   // Initialize controllers globally so IndexedStack children can find them,

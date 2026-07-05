@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/habit_list_item.dart';
 import '../widgets/progress_header.dart';
 import '../widgets/add_habit_sheet.dart';
+import '../widgets/personalization_card.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../stats/screens/stats_screen.dart';
 import '../../ai_coach/screens/ai_coach_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../paralysis_mode/widgets/paralysis_banner.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -97,7 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final isSelected = _currentIndex == index;
     final color = isSelected ? context.colors.primary : context.colors.inactiveGray;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _currentIndex = index);
+      },
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -159,6 +165,8 @@ class _HomeBody extends StatelessWidget {
                       : const SizedBox(width: double.infinity),
                 )),
 
+            const PersonalizationCard(),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
               child: Text(
@@ -176,7 +184,7 @@ class _HomeBody extends StatelessWidget {
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
-                  return Center(child: CircularProgressIndicator(color: context.colors.primary));
+                  return const SkeletonList(count: 4);
                 }
 
                 if (controller.habits.isEmpty) {

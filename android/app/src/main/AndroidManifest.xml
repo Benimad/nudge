@@ -10,6 +10,9 @@
         android:label="Nudge"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- PostHog is initialized from Dart (AnalyticsService.init) so the key
+             can be injected via dart-define; disable native auto-init. -->
+        <meta-data android:name="com.posthog.posthog.AUTO_INIT" android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

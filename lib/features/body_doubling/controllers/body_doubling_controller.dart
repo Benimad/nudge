@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../habits/controllers/home_controller.dart';
 import '../../../core/database/database_helper.dart';
+import '../services/presence_service.dart';
 
 class BodyDoublingController extends GetxController {
   var isSessionActive = false.obs;
@@ -12,11 +12,15 @@ class BodyDoublingController extends GetxController {
   var taskName = ''.obs;
   var totalSeconds = 1500.obs;
   var remainingSeconds = 1500.obs;
-  var communityCount = 4.obs;
-  
+
+  /// Real people in focus mode right now (Firestore presence, self included).
+  /// Starts at 1 — you — and only moves when a live count actually arrives,
+  /// so the number is never invented.
+  var communityCount = 1.obs;
+
   Timer? _timer;
-  Timer? _communityTimer;
-  
+  final PresenceService _presence = PresenceService();
+
   var sessionsCompletedToday = 0.obs;
   var totalFocusMinutesWeek = 0.obs;
 
@@ -27,7 +31,6 @@ class BodyDoublingController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _startCommunityTimer();
     _loadFocusStats();
   }
 
@@ -44,7 +47,7 @@ class BodyDoublingController extends GetxController {
   @override
   void onClose() {
     _timer?.cancel();
-    _communityTimer?.cancel();
+    _presence.stop();
     super.onClose();
   }
 
@@ -54,7 +57,10 @@ class BodyDoublingController extends GetxController {
     totalSeconds.value = minutes * 60;
     remainingSeconds.value = totalSeconds.value;
     isSessionActive.value = true;
-    
+    communityCount.value = 1;
+    _presence.start(onCount: (count) => communityCount.value = count);
+    HapticFeedback.mediumImpact();
+
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (remainingSeconds.value > 0) {
@@ -91,6 +97,7 @@ class BodyDoublingController extends GetxController {
 
   void _completeSession() async {
     _timer?.cancel();
+    _presence.stop();
     isSessionActive.value = false;
     isPaused.value = false;
     sessionsCompletedToday.value++;
@@ -138,17 +145,9 @@ class BodyDoublingController extends GetxController {
 
   void endSession() {
     _timer?.cancel();
+    _presence.stop();
     isSessionActive.value = false;
     isPaused.value = false;
-  }
-
-  void _startCommunityTimer() {
-    _communityTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      // realistic random number between 2-12 that changes slowly (+-1 per minute)
-      int change = Random().nextBool() ? 1 : -1;
-      int newValue = communityCount.value + change;
-      communityCount.value = newValue.clamp(1, 12);
-    });
   }
 
   String get formattedTime {

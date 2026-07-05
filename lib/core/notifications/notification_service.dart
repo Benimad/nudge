@@ -168,7 +168,7 @@ class NotificationService {
         importance: Importance.high,
         priority: Priority.high,
         icon: '@mipmap/ic_launcher',
-        color: const Color(0xFF574EB1),
+        color: const Color(0xFF7862E8), // AppTheme.primaryColor
         enableVibration: true,
         playSound: true,
       ),

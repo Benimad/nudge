@@ -6,6 +6,7 @@ import '../../habits/models/habit_model.dart';
 import '../../ai_coach/services/ai_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/brain_mascot.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 
 class ParalysisModeScreen extends StatefulWidget {
   const ParalysisModeScreen({super.key});
@@ -241,9 +242,19 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                   
                   const SizedBox(height: 32),
                   
-                  if (_isLoadingAi)
-                    Center(child: CircularProgressIndicator(color: context.colors.primary))
-                  else if (_microSteps != null) ...[
+                  if (_isLoadingAi) ...[
+                    Text(
+                      'Breaking it down into tiny steps…',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: context.colors.textVariant,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const SkeletonList(count: 3, padding: EdgeInsets.zero),
+                  ] else if (_microSteps != null) ...[
                     Text(
                       'Try one of these micro-steps',
                       style: TextStyle(

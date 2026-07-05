@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +35,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   void _toggleGoal(String title) {
     final isSelected = _selectedGoals.contains(title);
     if (!isSelected && _selectedGoals.length >= 3) return;
+    HapticFeedback.selectionClick();
     setState(() {
       isSelected ? _selectedGoals.remove(title) : _selectedGoals.add(title);
     });

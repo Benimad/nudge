@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/habit_model.dart';
 import '../controllers/home_controller.dart';
 import '../../../core/theme/app_theme.dart';
+import 'add_habit_sheet.dart';
 import 'habit_check_circle.dart';
 
 class HabitListItem extends StatefulWidget {
@@ -18,6 +20,15 @@ class HabitListItem extends StatefulWidget {
 
 class _HabitListItemState extends State<HabitListItem> {
   bool _isPressed = false;
+
+  void _openEditSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddHabitSheet(habit: widget.habit),
+    );
+  }
 
   String _streakLabel(int streak, DateTime createdAt) {
     if (streak > 0) return '🔥 $streak ${streak == 1 ? 'day' : 'days'}';
@@ -38,6 +49,12 @@ class _HabitListItemState extends State<HabitListItem> {
           onTapUp: (_) => setState(() => _isPressed = false),
           onTapCancel: () => setState(() => _isPressed = false),
           onTap: () => controller.toggleHabit(widget.habit),
+          // Long-press opens edit — tap stays reserved for the core
+          // one-touch completion loop.
+          onLongPress: () {
+            HapticFeedback.selectionClick();
+            _openEditSheet(context);
+          },
           child: AnimatedScale(
             scale: _isPressed ? 0.97 : 1.0,
             duration: const Duration(milliseconds: 150),
@@ -88,7 +105,14 @@ class _HabitListItemState extends State<HabitListItem> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(Icons.chevron_right_rounded, color: context.colors.outlineVariant, size: 26),
+                  GestureDetector(
+                    onTap: () => _openEditSheet(context),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(Icons.chevron_right_rounded, color: context.colors.outlineVariant, size: 26),
+                    ),
+                  ),
                 ],
               ),
             ),

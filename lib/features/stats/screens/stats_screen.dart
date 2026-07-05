@@ -424,7 +424,8 @@ class _StatsScreenState extends State<StatsScreen> {
           Text(
             controller.aiInsight.value.isNotEmpty
                 ? controller.aiInsight.value
-                : 'You complete 2x more habits on Wednesdays compared to your weekend average. That midweek momentum is your superpower.',
+                // Honest empty state — never invent a pattern that isn't in the data.
+                : "Not enough data yet. Keep checking habits off for a few days and I'll spot your patterns — like which day of the week is your superpower.",
             style: TextStyle(
               fontSize: 15,
               color: context.colors.text,

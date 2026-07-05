@@ -78,38 +78,40 @@ class ProgressHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Obx(() => TweenAnimationBuilder<double>(
-                              duration: const Duration(milliseconds: 800),
-                              curve: Curves.easeOutCubic,
-                              tween: Tween<double>(begin: 0, end: controller.todayProgress.value),
-                              builder: (context, value, _) {
-                                return LinearProgressIndicator(
+                // Bar and percentage share one tween so the number counts up
+                // in lockstep with the bar sweep.
+                Obx(() => TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeOutCubic,
+                      tween: Tween<double>(begin: 0, end: controller.todayProgress.value),
+                      builder: (context, value, _) {
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
                                   value: value,
                                   minHeight: 10,
                                   backgroundColor: context.colors.divider,
                                   valueColor: AlwaysStoppedAnimation<Color>(context.colors.success),
-                                );
-                              },
-                            )),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Obx(() => Text(
-                          '${(controller.todayProgress.value * 100).toInt()}%',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: context.colors.success,
-                            fontFamily: 'Inter',
-                          ),
-                        )),
-                  ],
-                ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Text(
+                              '${(value * 100).round()}%',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: context.colors.success,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    )),
               ],
             ),
           ).animate().fadeIn(duration: 500.ms, delay: 200.ms).slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),

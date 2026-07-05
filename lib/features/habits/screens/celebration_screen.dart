@@ -43,11 +43,19 @@ class CelebrationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.colors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+        // Scroll-safe on short screens (small phones, landscape, split-screen):
+        // the column fills the viewport when content fits, scrolls when not.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
               const Spacer(),
               // Top Star Icon with light green circle
               Center(
@@ -236,8 +244,12 @@ class CelebrationScreen extends StatelessWidget {
                   ),
                 ),
               ).animate().fadeIn(delay: 600.ms),
-              const SizedBox(height: 12),
-            ],
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),

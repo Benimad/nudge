@@ -227,7 +227,7 @@ class HomeController extends GetxController {
     // Check path
     completions[habit.id] = true;
     _calculateProgress();
-    HapticFeedback.lightImpact();
+    HapticFeedback.mediumImpact();
 
     dopaminePoints.value += 10;
     if (todayProgress.value >= 1.0) dopaminePoints.value += 25;

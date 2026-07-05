@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Design tokens sourced from assets/DESIGN (1).md — the "Nudge" sensory-safe,
 /// neuro-inclusive design system. No red anywhere; amber replaces error/danger.
@@ -46,9 +45,26 @@ class AppTheme {
         ),
       ];
 
+  /// Bundled Inter (assets/fonts) — no runtime font fetching.
+  static TextStyle _inter({
+    required FontWeight fontWeight,
+    required double fontSize,
+    Color? color,
+    double? height,
+  }) {
+    return TextStyle(
+      fontFamily: 'Inter',
+      fontWeight: fontWeight,
+      fontSize: fontSize,
+      color: color,
+      height: height,
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Inter',
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         primary: primaryColor,
@@ -71,7 +87,7 @@ class AppTheme {
         elevation: 0,
         backgroundColor: backgroundColor,
         foregroundColor: textColor,
-        titleTextStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 22, color: textColor),
+        titleTextStyle: _inter(fontWeight: FontWeight.w500, fontSize: 22, color: textColor),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -80,7 +96,7 @@ class AppTheme {
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 16),
+          textStyle: _inter(fontWeight: FontWeight.w500, fontSize: 16),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -116,7 +132,7 @@ class AppTheme {
         elevation: 0,
         backgroundColor: colors.background,
         foregroundColor: colors.text,
-      ).copyWith(titleTextStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 22, color: colors.text)),
+      ).copyWith(titleTextStyle: _inter(fontWeight: FontWeight.w500, fontSize: 22, color: colors.text)),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.primary,
@@ -124,7 +140,7 @@ class AppTheme {
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 16),
+          textStyle: _inter(fontWeight: FontWeight.w500, fontSize: 16),
         ),
       ),
       textTheme: _textTheme(colors.text, colors.textVariant),
@@ -135,19 +151,19 @@ class AppTheme {
   /// Inter type scale, restricted to weights 400 (Regular) and 500 (Medium)
   /// per DESIGN.md: headline-lg 22, headline-md 20, body-lg 16, body-md 14, label-lg 14, label-sm 12.
   static TextTheme _textTheme(Color onSurface, Color onSurfaceVariant) {
-    return GoogleFonts.interTextTheme().copyWith(
-      displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
-      displayMedium: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
-      displaySmall: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 20, color: onSurface, height: 26 / 20),
-      headlineMedium: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
-      headlineSmall: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 20, color: onSurface, height: 26 / 20),
-      titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
-      titleMedium: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 16, color: onSurface),
-      bodyLarge: GoogleFonts.inter(fontWeight: FontWeight.w400, fontSize: 16, color: onSurface, height: 24 / 16),
-      bodyMedium: GoogleFonts.inter(fontWeight: FontWeight.w400, fontSize: 14, color: onSurface, height: 20 / 14),
-      bodySmall: GoogleFonts.inter(fontWeight: FontWeight.w400, fontSize: 14, color: onSurfaceVariant, height: 20 / 14),
-      labelLarge: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14, color: onSurface, height: 20 / 14),
-      labelSmall: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 12, color: onSurfaceVariant, height: 16 / 12),
+    return const TextTheme().copyWith(
+      displayLarge: _inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
+      displayMedium: _inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
+      displaySmall: _inter(fontWeight: FontWeight.w500, fontSize: 20, color: onSurface, height: 26 / 20),
+      headlineMedium: _inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
+      headlineSmall: _inter(fontWeight: FontWeight.w500, fontSize: 20, color: onSurface, height: 26 / 20),
+      titleLarge: _inter(fontWeight: FontWeight.w500, fontSize: 22, color: onSurface, height: 28 / 22),
+      titleMedium: _inter(fontWeight: FontWeight.w500, fontSize: 16, color: onSurface),
+      bodyLarge: _inter(fontWeight: FontWeight.w400, fontSize: 16, color: onSurface, height: 24 / 16),
+      bodyMedium: _inter(fontWeight: FontWeight.w400, fontSize: 14, color: onSurface, height: 20 / 14),
+      bodySmall: _inter(fontWeight: FontWeight.w400, fontSize: 14, color: onSurfaceVariant, height: 20 / 14),
+      labelLarge: _inter(fontWeight: FontWeight.w500, fontSize: 14, color: onSurface, height: 20 / 14),
+      labelSmall: _inter(fontWeight: FontWeight.w500, fontSize: 12, color: onSurfaceVariant, height: 16 / 12),
     );
   }
 
@@ -404,3 +420,4 @@ extension AppColorsX on BuildContext {
   /// third-party dependency.
   bool get isDarkTheme => Theme.of(this).brightness == Brightness.dark;
 }
+

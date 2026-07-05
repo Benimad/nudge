@@ -1,15 +1,29 @@
-/// Nudge app — API configuration
-/// Keep this file out of public repositories.
+/// Nudge app — API configuration.
 ///
-/// Build with: --dart-define=GEMINI_API_KEY=your_key_here
+/// All values are injected at build time and never committed to source:
+///   flutter build apk \
+///     --dart-define=GEMINI_API_KEY=your_key \
+///     --dart-define=GEMINI_MODEL=gemini-2.5-flash \
+///     --dart-define=POSTHOG_API_KEY=phc_xxx \
+///     --dart-define=REVENUECAT_ANDROID_KEY=goog_xxx \
+///     --dart-define=REVENUECAT_IOS_KEY=appl_xxx
+///
+/// With no GEMINI_API_KEY the AI coach falls back to its offline, ADHD-specific
+/// local knowledge base — the feature degrades gracefully rather than breaking.
 class AppConfig {
-  // Gemini API key — injected at build time, never committed to source
   static const String geminiApiKey = String.fromEnvironment(
     'GEMINI_API_KEY',
     defaultValue: '',
   );
 
-  // Model: Gemma 4 26B A4B Instruction-tuned
-  // Activates ~4B params per inference — fast, efficient, high-quality
-  static const String geminiModel = 'gemma-4-26b-a4b-it';
+  /// Default is a broadly available, low-latency model with a generous free
+  /// tier; override with --dart-define=GEMINI_MODEL=... to switch models
+  /// without a code change.
+  static const String geminiModel = String.fromEnvironment(
+    'GEMINI_MODEL',
+    defaultValue: 'gemini-2.5-flash',
+  );
+
+  /// True when the coach can reach a real model.
+  static bool get aiConfigured => geminiApiKey.isNotEmpty;
 }
