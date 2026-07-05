@@ -20,7 +20,7 @@ class _HabitListItemState extends State<HabitListItem> {
   bool _isPressed = false;
 
   String _streakLabel(int streak, DateTime createdAt) {
-    if (streak > 0) return '🔥 $streak days';
+    if (streak > 0) return '🔥 $streak ${streak == 1 ? 'day' : 'days'}';
     final isBrandNew = DateTime.now().difference(createdAt).inDays < 1;
     return isBrandNew ? 'New habit' : 'Yesterday missed · no shame';
   }

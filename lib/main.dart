@@ -7,6 +7,7 @@ import 'core/notifications/notification_service.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/auth_service.dart';
 import 'features/settings/services/subscription_service.dart';
+import 'features/splash/screens/splash_screen.dart';
 import 'features/onboarding/screens/welcome_screen.dart';
 import 'features/onboarding/screens/goals_screen.dart';
 import 'features/onboarding/screens/reminder_setup_screen.dart';
@@ -85,7 +86,6 @@ class _NudgeAppState extends State<NudgeApp> {
   bool _reduceAnimations = false;
   bool _highContrast = false;
   bool _isLoading = true;
-  String _initialRoute = '/onboarding/welcome';
 
   @override
   void initState() {
@@ -108,9 +108,6 @@ class _NudgeAppState extends State<NudgeApp> {
         _textScale = (prefs.getBool('large_text') ?? false) ? 1.2 : 1.0;
         _reduceAnimations = prefs.getBool('sensory_safe_ui') ?? false;
         _highContrast = prefs.getBool('high_contrast') ?? false;
-        _initialRoute = (prefs.getBool('onboarding_complete') ?? false)
-            ? '/home'
-            : '/onboarding/welcome';
         _isLoading = false;
       });
     }
@@ -119,8 +116,15 @@ class _NudgeAppState extends State<NudgeApp> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const MaterialApp(
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      // Settings load in a few frames; show a blank brand-colored surface that
+      // matches the splash background so launch reads as one continuous scene
+      // instead of a white flash + spinner.
+      final dark = WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: dark ? AppColors.dark.background : AppColors.light.background,
+        ),
       );
     }
 
@@ -141,7 +145,9 @@ class _NudgeAppState extends State<NudgeApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       navigatorKey: Get.key,
-      initialRoute: _initialRoute,
+      initialRoute: '/splash',
+      defaultTransition: Transition.cupertino,
+      transitionDuration: const Duration(milliseconds: 320),
       builder: (context, child) {
         return Listener(
           onPointerDown: (_) => _registerActivity(),
@@ -158,6 +164,13 @@ class _NudgeAppState extends State<NudgeApp> {
       },
       getPages: [
         GetPage(name: '/', page: () => const WelcomeScreen()),
+        GetPage(
+          name: '/splash',
+          page: () => const SplashScreen(),
+          // The splash fades itself out, so the route underneath just fades in.
+          transition: Transition.fadeIn,
+          transitionDuration: const Duration(milliseconds: 350),
+        ),
         GetPage(name: '/onboarding/welcome', page: () => const WelcomeScreen()),
         GetPage(name: '/onboarding/goals', page: () => const GoalsScreen()),
         GetPage(name: '/onboarding/reminders', page: () => const ReminderSetupScreen()),

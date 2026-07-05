@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Smiling brain mascot, simplified from lib/shared/widgets/brain_mascot.dart.
+     Drawn inside the 66dp adaptive-icon safe zone of the 108dp viewport. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Brain silhouette with scalloped top -->
+    <path
+        android:fillColor="#F3F0FF"
+        android:pathData="M32,51.2
+            C32,36 41.7,33.6 47,38
+            C51.4,34.4 56.6,34.4 61,38
+            C66.3,33.6 76,36 76,51.2
+            C76,66.4 71.6,76 54,76
+            C36.4,76 32,66.4 32,51.2
+            Z" />
+
+    <!-- Center seam (upper half) -->
+    <path
+        android:strokeColor="#7862E8"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M54,38.5 L54,53.5" />
+
+    <!-- Happy closed eyes -->
+    <path
+        android:strokeColor="#7862E8"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M42.1,60.4 Q45.2,56.8 48.3,60.4" />
+    <path
+        android:strokeColor="#7862E8"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M59.7,60.4 Q62.8,56.8 65.9,60.4" />
+
+    <!-- Smile -->
+    <path
+        android:strokeColor="#7862E8"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M48.7,65.6 Q54,71.2 59.3,65.6" />
+
+    <!-- Rays radiating from the sides -->
+    <path
+        android:strokeColor="#D9D2FB"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M27.5,42 L31.5,44 M25,54 L29.5,54 M27.5,66 L31.5,64
+            M80.5,42 L76.5,44 M83,54 L78.5,54 M80.5,66 L76.5,64" />
+</vector>

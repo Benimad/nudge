@@ -181,7 +181,7 @@ class CelebrationScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              streak > 0 ? '$streak days' : 'Day one',
+                              streak > 0 ? '$streak ${streak == 1 ? 'day' : 'days'}' : 'Day one',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w800,

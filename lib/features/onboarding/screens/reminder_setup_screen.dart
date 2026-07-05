@@ -24,9 +24,9 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF574EB1),
-            ),
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: context.colors.primary,
+                ),
           ),
           child: child!,
         );

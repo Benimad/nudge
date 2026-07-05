@@ -251,7 +251,7 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
                   Switch(
                     value: _aiBreakdownEnabled,
                     onChanged: (val) => setState(() => _aiBreakdownEnabled = val),
-                    activeColor: Colors.white,
+                    activeThumbColor: Colors.white,
                     activeTrackColor: context.colors.primary,
                     inactiveThumbColor: Colors.white,
                     inactiveTrackColor: context.colors.outlineVariant,
