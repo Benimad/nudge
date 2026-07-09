@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nudge — Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e8e8e8; background: #121212; }
+    a { color: #8ab4f8; }
+    .meta, blockquote { color: #a0a0a0; border-color: #333; }
+    code { background: #1e1e1e; }
+  }
+  h1 { font-size: 1.8rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.25rem; border-bottom: 1px solid rgba(128,128,128,0.3); padding-bottom: 0.35rem; }
+  .meta { color: #555; font-size: 0.95rem; margin-bottom: 1.5rem; }
+  .meta strong { font-weight: 600; }
+  ul { padding-left: 1.3rem; }
+  li { margin-bottom: 0.6rem; }
+  code { background: rgba(128,128,128,0.15); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.92em; }
+  a { color: #1a56db; }
+  footer { margin-top: 3rem; font-size: 0.85rem; color: #777; }
+</style>
+</head>
+<body>
+
+<h1>Nudge — Privacy Policy</h1>
+<p class="meta">
+  <strong>Effective date:</strong> July 5, 2026<br>
+  <strong>App:</strong> Nudge — ADHD Habit Tracker &amp; Focus (<code>com.app.nudge</code>)<br>
+  <strong>Contact:</strong> <a href="mailto:adamlaalami72@gmail.com">adamlaalami72@gmail.com</a>
+</p>
+
+<h2>The short version</h2>
+<p>
+  Your habits live on your device. We sync an encrypted-in-transit copy to your
+  own private cloud space so you don't lose it, we never sell data, and we show
+  no ads. Turn on Offline mode and nothing leaves your phone at all.
+</p>
+
+<h2>What Nudge stores</h2>
+<ul>
+  <li><strong>Habit data</strong> — habit names, completion history, streaks, focus-session
+    durations, and optional notes you write. Stored in a local database on your
+    device (the source of truth) and mirrored to your private Firebase Firestore
+    space, scoped to your account, so you can restore it after reinstalling.</li>
+  <li><strong>Preferences</strong> — your selected brain type, goals, reminder times, and
+    accessibility settings. Stored locally; goals and profile settings may be
+    mirrored to your private cloud space.</li>
+  <li><strong>Account identity</strong> — by default an anonymous Firebase account is created
+    so sync has somewhere to write. If you choose "Sign in with Google," we
+    receive your Google account email and display name for authentication only.</li>
+  <li><strong>AI Coach conversations</strong> — messages you send to the AI coach are processed
+    by Google's Gemini API to generate a reply. With Offline mode on (or no
+    network), coaching uses an on-device knowledge base and nothing is sent.</li>
+  <li><strong>Focus presence</strong> — during a body-doubling session, an anonymous heartbeat
+    (a timestamp keyed to your user id) is shared so the "people working" count
+    is real. It contains no habit or task content and is deleted when the
+    session ends.</li>
+  <li><strong>Purchase status</strong> — subscriptions are processed by Google Play / Apple and
+    RevenueCat. We never see your payment details, only an entitlement flag.</li>
+  <li><strong>Analytics</strong> — if product analytics are enabled in a build, PostHog receives
+    anonymous, content-free usage events (e.g. "habit_completed" with only a point
+    count). We never send habit names, note text, mood entries, or AI coach
+    message content. You can turn analytics off in Settings, and Offline mode
+    disables them entirely.</li>
+</ul>
+
+<h2>What Nudge does NOT do</h2>
+<ul>
+  <li>No ads, no ad SDKs, no selling or renting data to anyone.</li>
+  <li>No access to your contacts, location, camera, photos, or files.</li>
+  <li>Microphone access is used only while you actively use voice input in the AI
+    coach, and audio is processed for transcription only.</li>
+</ul>
+
+<h2>Data retention &amp; deletion</h2>
+<ul>
+  <li><strong>Delete in-app:</strong> Settings → Privacy &amp; data → "Export my data" /
+    "Delete all data" removes the local database and your cloud mirror.</li>
+  <li>Uninstalling the app removes all local data immediately.</li>
+  <li>To delete your cloud data and account entirely, use the in-app deletion or
+    email us at the contact above.</li>
+</ul>
+
+<h2>Children</h2>
+<p>
+  Nudge is not directed at children under 13 and does not knowingly collect data
+  from them.
+</p>
+
+<h2>Your rights (GDPR/CCPA)</h2>
+<p>
+  You may request access, correction, export, or deletion of your data at any
+  time via the in-app tools or by email. We respond within 30 days.
+</p>
+
+<h2>Changes</h2>
+<p>
+  We'll update this policy in-app and at its published URL when practices change,
+  with the effective date above.
+</p>
+
+<footer>Nudge — ADHD Habit Tracker &amp; Focus</footer>
+
+</body>
+</html>

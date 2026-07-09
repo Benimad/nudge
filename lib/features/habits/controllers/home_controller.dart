@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit_model.dart';
@@ -8,13 +8,14 @@ import '../models/completion_model.dart';
 import '../repositories/habit_repository.dart';
 import '../screens/celebration_screen.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../core/services/app_settings.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../settings/services/subscription_service.dart';
 import '../../../core/notifications/notification_service.dart';
 
-class HomeController extends GetxController {
+class HomeController extends GetxController with WidgetsBindingObserver {
   final HabitRepository _repository = HabitRepository();
-  
+
   final habits = <HabitModel>[].obs;
   final completions = <String, bool>{}.obs;
   final streaks = <String, int>{}.obs;
@@ -26,10 +27,12 @@ class HomeController extends GetxController {
   Timer? _paralysisTimer;
   final showParalysisBanner = false.obs;
   final _lastActivityTime = DateTime.now().obs;
+  bool _isForeground = true;
 
   @override
   void onInit() {
     super.onInit();
+    WidgetsBinding.instance.addObserver(this);
     _loadUserData();
     refreshData();
     _initParalysisDetection();
@@ -38,7 +41,16 @@ class HomeController extends GetxController {
   @override
   void onClose() {
     _paralysisTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.onClose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _isForeground = state == AppLifecycleState.resumed;
+    // Returning to the app counts as activity, so we never fire a "stuck?"
+    // nudge the instant someone reopens it after time away.
+    if (_isForeground) resetParalysisTimer();
   }
 
   Future<void> _loadUserData() async {
@@ -56,6 +68,7 @@ class HomeController extends GetxController {
 
   Future<void> refreshData() async {
     isLoading.value = true;
+    await _loadUserData(); // pick up a name/points set during onboarding
     final habitsResult = await _repository.getAllHabits();
     final completionsResult = await _repository.getCompletionsForDate(DateTime.now());
 
@@ -131,14 +144,22 @@ class HomeController extends GetxController {
 
   Future<void> _scheduleReminderIfNeeded(HabitModel habit) async {
     if (habit.reminderStyle == 'none') return;
+    final prefs = await SharedPreferences.getInstance();
+
+    // Honor the user's own morning/evening reminder times (set in onboarding or
+    // Settings) instead of a hardcoded map, so per-habit reminders line up with
+    // the times they actually chose.
+    final morning = _prefMinutes(prefs.getString('morning_reminder')) ?? 8 * 60;
+    final evening = _prefMinutes(prefs.getString('evening_reminder')) ?? 20 * 60;
     final Map<String, int> timeMap = {
-      'morning': 8 * 60,
+      'morning': morning,
       'afternoon': 14 * 60,
-      'evening': 18 * 60,
+      'evening': evening,
       'night': 21 * 60,
-      'anytime': 9 * 60,
+      'anytime': morning,
     };
-    final reminderTime = timeMap[habit.timeOfDay] ?? 9 * 60;
+    final reminderTime = timeMap[habit.timeOfDay] ?? morning;
+
     try {
       await NotificationService().scheduleHabitReminders(
         habitId: habit.id,
@@ -146,10 +167,22 @@ class HomeController extends GetxController {
         body: 'Time for your ${habit.name} habit!',
         reminderTimes: [reminderTime],
         transitionWarningMinutes: 10,
+        // "Vibrate only" routes through the silent channel (no sound).
+        silent: habit.reminderStyle == 'vibrate',
       );
     } catch (e) {
       debugPrint('Failed to schedule reminder: $e');
     }
+  }
+
+  int? _prefMinutes(String? raw) {
+    if (raw == null) return null;
+    final parts = raw.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return h * 60 + m;
   }
 
   Future<void> updateHabit(HabitModel habit) async {
@@ -197,12 +230,18 @@ class HomeController extends GetxController {
     _lastToggle[habit.id] = now;
 
     final currentlyCompleted = completions[habit.id] == true;
+    // Capture whether the day was already complete BEFORE this toggle, so the
+    // all-done bonus is granted exactly once per crossing and reversed on
+    // uncheck — no more farming points by toggling the last habit.
+    final wasDayComplete = todayProgress.value >= 1.0;
 
     if (currentlyCompleted) {
       // Uncheck path
       completions[habit.id] = false;
       _calculateProgress();
-      dopaminePoints.value -= 10;
+      final crossedBelow = wasDayComplete && todayProgress.value < 1.0;
+      final delta = 10 + (crossedBelow ? 25 : 0);
+      dopaminePoints.value -= delta;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('dopamine_points', dopaminePoints.value);
 
@@ -210,7 +249,7 @@ class HomeController extends GetxController {
       if (!result.isSuccess) {
         // Revert optimistic update on failure
         completions[habit.id] = true;
-        dopaminePoints.value += 10;
+        dopaminePoints.value += delta;
         _calculateProgress();
         Get.snackbar('Error', 'Failed to undo completion', snackPosition: SnackPosition.BOTTOM);
       } else {
@@ -229,8 +268,10 @@ class HomeController extends GetxController {
     _calculateProgress();
     HapticFeedback.mediumImpact();
 
-    dopaminePoints.value += 10;
-    if (todayProgress.value >= 1.0) dopaminePoints.value += 25;
+    final dayComplete = todayProgress.value >= 1.0;
+    final justCompletedDay = dayComplete && !wasDayComplete;
+    final earned = 10 + (justCompletedDay ? 25 : 0);
+    dopaminePoints.value += earned;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('dopamine_points', dopaminePoints.value);
@@ -241,18 +282,14 @@ class HomeController extends GetxController {
     if (!result.isSuccess) {
       // Revert optimistic update on failure.
       completions[habit.id] = false;
-      dopaminePoints.value -= 10;
+      dopaminePoints.value -= earned;
       _calculateProgress();
       Get.snackbar('Error', 'Failed to save completion', snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
-    // Analytics
-    try {
-      await AnalyticsService.logHabitCompleted(habit.name, 10);
-    } catch (_) {
-      // Silently fail analytics to not block UX
-    }
+    // Analytics — content-free (no habit name leaves the device).
+    unawaited(AnalyticsService.logHabitCompleted(pointsAwarded: earned));
 
     // Update cached streak for this habit only (no full reload).
     final newStreak = await _repository.getStreakForHabit(habit.id);
@@ -262,8 +299,24 @@ class HomeController extends GetxController {
       unawaited(FirestoreService().updateDopaminePoints(dopaminePoints.value));
     }
 
-    // Trigger dopamine celebration
-    Get.to(() => CelebrationScreen(streak: newStreak), fullscreenDialog: true);
+    // Full-screen celebration is reserved for genuinely meaningful moments so
+    // it stays a reward, not a per-tap interruption. Everyday check-offs get
+    // the inline check-circle animation instead.
+    // Sensory-safe / reduce-motion users never get the full-screen takeover.
+    if (!AppSettings.instance.reduceMotion.value &&
+        _shouldCelebrate(newStreak: newStreak, dayComplete: dayComplete)) {
+      Get.to(() => CelebrationScreen(streak: newStreak), fullscreenDialog: true);
+    }
+  }
+
+  /// Meaningful moments: finishing the whole day, a first-ever completion, or a
+  /// streak milestone (weekly for the first month, then every 25 days).
+  bool _shouldCelebrate({required int newStreak, required bool dayComplete}) {
+    if (dayComplete) return true;
+    if (newStreak == 1) return true;
+    const milestones = {3, 7, 14, 21, 30};
+    if (milestones.contains(newStreak)) return true;
+    return newStreak > 30 && newStreak % 25 == 0;
   }
 
   void addPoints(int points) {
@@ -278,15 +331,19 @@ class HomeController extends GetxController {
 
   void _initParalysisDetection() {
     _paralysisTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      // Only detect paralysis while the app is actually open and in use. A
+      // false "you're stuck" ping while someone is happily working elsewhere is
+      // exactly the shame the brand promises never to cause.
+      if (!_isForeground) return;
       final now = DateTime.now();
       if (now.hour >= 8 && now.hour <= 22) {
-        if (!showParalysisBanner.value && now.difference(_lastActivityTime.value).inMinutes >= 35) {
+        if (!showParalysisBanner.value &&
+            now.difference(_lastActivityTime.value).inMinutes >= 35) {
           showParalysisBanner.value = true;
-          // Nudge even if the app is backgrounded/screen off.
           NotificationService().showNotification(
             id: 9001,
             title: 'Feeling stuck?',
-            body: "You've been quiet a while — let's break it into a tiny step.",
+            body: "No pressure — want to turn one thing into a tiny step together?",
           );
         }
       }

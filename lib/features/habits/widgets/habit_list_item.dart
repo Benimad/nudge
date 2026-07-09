@@ -44,7 +44,12 @@ class _HabitListItemState extends State<HabitListItem> {
       child: Obx(() {
         final bool isCompleted = controller.isCompleted(widget.habit.id);
 
-        return GestureDetector(
+        return Semantics(
+          button: true,
+          toggled: isCompleted,
+          label:
+              '${widget.habit.name}, ${isCompleted ? 'completed today' : 'not completed'}. Double tap to toggle, long press to edit.',
+          child: GestureDetector(
           onTapDown: (_) => setState(() => _isPressed = true),
           onTapUp: (_) => setState(() => _isPressed = false),
           onTapCancel: () => setState(() => _isPressed = false),
@@ -120,7 +125,8 @@ class _HabitListItemState extends State<HabitListItem> {
         )
             .animate()
             .fadeIn(duration: 400.ms, delay: (300 + widget.index * 80).ms)
-            .slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic);
+            .slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
+        );
       }),
     );
   }

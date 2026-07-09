@@ -16,7 +16,20 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
   final AuthService _authService = AuthService();
+  final TextEditingController _nameController = TextEditingController();
   String? _selectedBrainType;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveName(SharedPreferences prefs, {String? fallback}) async {
+    final typed = _nameController.text.trim();
+    final name = typed.isNotEmpty ? typed : (fallback ?? '');
+    if (name.isNotEmpty) await prefs.setString('user_name', name);
+  }
 
   static const List<Map<String, dynamic>> _brainTypes = [
     {'label': 'ADHD', 'icon': Icons.bolt_rounded},
@@ -39,6 +52,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('brain_type', _selectedBrainType!);
+    await _saveName(prefs);
     if (mounted) {
       Get.toNamed('/onboarding/goals');
     }
@@ -59,6 +73,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('brain_type', _selectedBrainType!);
       await _authService.signInWithGoogle();
+      // Prefer a typed name; otherwise use their Google first name.
+      final googleName = _authService.currentUser?.displayName?.split(' ').first;
+      await _saveName(prefs, fallback: googleName);
       if (mounted) {
         // Only skip straight to Home for a returning user who already
         // finished onboarding before (e.g. reinstalling and signing back in).
@@ -129,7 +146,35 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           fontFamily: 'Inter',
                         ),
                       ).animate().fadeIn(duration: 500.ms, delay: 280.ms).slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
+
+                      // Name — optional, personalizes the greeting and coach.
+                      TextField(
+                        controller: _nameController,
+                        textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.done,
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 16, color: context.colors.text),
+                        decoration: InputDecoration(
+                          hintText: 'What should we call you? (optional)',
+                          hintStyle: TextStyle(color: context.colors.textVariant, fontFamily: 'Inter', fontSize: 15),
+                          filled: true,
+                          fillColor: context.colors.surface,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(color: context.colors.outlineVariant, width: 1.5),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(color: context.colors.outlineVariant, width: 1.5),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(color: context.colors.primary, width: 2),
+                          ),
+                        ),
+                      ).animate().fadeIn(duration: 400.ms, delay: 340.ms).slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
+                      const SizedBox(height: 20),
 
                       // Brain type selector — stadium pills, staggered entrance.
                       ...List.generate(_brainTypes.length, (i) {

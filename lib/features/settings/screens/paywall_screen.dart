@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../services/subscription_service.dart';
 
@@ -16,6 +17,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _annualSelected = true;
   String _monthlyPrice = '\$6.99';
   String _annualPrice = '\$49.99';
+  int? _savingsPercent;
+  bool _trialAvailable = false;
+  final bool _configured = SubscriptionService.isConfigured;
 
   @override
   void initState() {
@@ -24,18 +28,38 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _loadPrices() async {
+    if (!_configured) return;
     try {
       final offerings = await _subscriptionService.getOfferings();
       final monthly = offerings.current?.monthly;
       final annual = offerings.current?.annual;
+      final trial = await _subscriptionService.hasTrialAvailable();
       if (mounted && monthly != null && annual != null) {
+        // Compute the real discount from actual store prices rather than a
+        // hardcoded "SAVE 40%".
+        int? savings;
+        final m = monthly.storeProduct.price;
+        final a = annual.storeProduct.price;
+        if (m > 0 && a > 0) {
+          final pct = (1 - (a / (m * 12))) * 100;
+          if (pct > 0) savings = pct.round();
+        }
         setState(() {
           _monthlyPrice = monthly.storeProduct.priceString;
           _annualPrice = annual.storeProduct.priceString;
+          _savingsPercent = savings;
+          _trialAvailable = trial;
         });
       }
     } catch (e) {
       // Keep defaults if RevenueCat fails
+    }
+  }
+
+  Future<void> _openLegal(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Get.snackbar('Could not open link', url, snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -160,7 +184,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Quicksand',
+                  fontFamily: 'Inter',
                   color: context.colors.text,
                 ),
               ),
@@ -197,6 +221,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       price: _annualPrice,
                       period: '/year',
                       isRecommended: _annualSelected,
+                      badge: _savingsPercent != null ? 'SAVE ${_savingsPercent!}%' : 'BEST VALUE',
                       onTap: () => setState(() => _annualSelected = true),
                     ),
                   ),
@@ -209,10 +234,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _purchase,
+                  onPressed: (_isLoading || !_configured) ? null : _purchase,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.colors.primary,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: context.colors.outlineVariant,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -222,31 +248,53 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text(
-                          'Start 7-day free trial',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
+                      : Text(
+                          !_configured
+                              ? 'Coming soon'
+                              : _trialAvailable
+                                  ? 'Start free trial'
+                                  : 'Continue',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            fontFamily: 'Quicksand',
+                            fontFamily: 'Inter',
                           ),
                         ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'No credit card required',
+                !_configured
+                    ? 'Subscriptions aren\'t available in this build yet.'
+                    : _trialAvailable
+                        ? 'Cancel anytime — you\'ll be billed when the trial ends.'
+                        : 'Cancel anytime in the store.',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
                   color: context.colors.textVariant,
-                  fontFamily: 'Quicksand',
+                  fontFamily: 'Inter',
                 ),
               ),
               const Spacer(),
+
+              // Legal — required on iOS, good practice everywhere.
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => _openLegal('https://nudgeapp.co/terms'),
+                    child: Text('Terms', style: TextStyle(color: context.colors.textVariant, fontSize: 12, fontFamily: 'Inter')),
+                  ),
+                  Text('·', style: TextStyle(color: context.colors.textVariant)),
+                  TextButton(
+                    onPressed: () => _openLegal('https://nudgeapp.co/privacy'),
+                    child: Text('Privacy', style: TextStyle(color: context.colors.textVariant, fontSize: 12, fontFamily: 'Inter')),
+                  ),
+                ],
+              ),
 
               // Restore purchase
               TextButton(
@@ -256,7 +304,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   style: TextStyle(
                     color: context.colors.textVariant,
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Quicksand',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
@@ -284,7 +332,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           text,
           style: TextStyle(
             fontSize: 15,
-            fontFamily: 'Quicksand',
+            fontFamily: 'Inter',
             color: context.colors.text,
           ),
         ),
@@ -299,6 +347,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     required String period,
     required bool isRecommended,
     required VoidCallback onTap,
+    String? badge,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -323,21 +372,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
         child: Column(
           children: [
-            if (isRecommended)
+            if (badge != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: context.colors.warning,
+                  color: context.colors.success,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'SAVE 40%',
-                  style: TextStyle(
+                child: Text(
+                  badge,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Quicksand',
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
@@ -346,7 +395,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               style: TextStyle(
                 fontSize: 14,
                 color: context.colors.textVariant,
-                fontFamily: 'Quicksand',
+                fontFamily: 'Inter',
               ),
             ),
             const SizedBox(height: 8),
@@ -355,7 +404,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Quicksand',
+                fontFamily: 'Inter',
                 color: context.colors.text,
               ),
             ),
@@ -364,7 +413,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: context.colors.textVariant,
-                fontFamily: 'Quicksand',
+                fontFamily: 'Inter',
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../../ai_coach/controllers/chat_controller.dart';
 import '../../habits/models/habit_model.dart';
 import '../../habits/repositories/habit_repository.dart';
+import '../../../core/database/database_helper.dart';
 
 /// Loads all stats data in a single batched pass (one habits query, one
 /// completions query) and computes every derived metric — daily/weekly
@@ -52,7 +53,7 @@ class StatsController extends GetxController {
 
     _recomputeOverallStats();
     _recomputeChart(selectedTimeRange.value);
-    _loadAiInsight();
+    await _loadAiInsight();
 
     isLoading.value = false;
   }
@@ -175,12 +176,25 @@ class StatsController extends GetxController {
     return thisWeek - lastWeek;
   }
 
-  void _loadAiInsight() {
+  Future<void> _loadAiInsight() async {
+    final now = DateTime.now();
+    final avgMood = await DatabaseHelper.instance
+        .getAverageMoodSince(now.subtract(const Duration(days: 7)));
+    String? moodNote;
+    if (avgMood != null) {
+      if (avgMood >= 4) {
+        moodNote = 'Your mood has been bright this week — a great time to lean into momentum.';
+      } else if (avgMood <= 2.5) {
+        moodNote = 'Mood has been low lately. Be extra gentle with yourself — tiny wins still count double.';
+      }
+    }
+
     final stats = {
       'completion_rate': weekCompletion.value,
       'best_day': _bestDayOfWeek() ?? 'unknown',
       'streak': bestStreak.value,
       'improvement': _weekOverWeekImprovement(),
+      if (moodNote != null) 'mood_note': moodNote,
     };
     try {
       aiInsight.value = Get.find<ChatController>().getWeeklyInsight(stats);
@@ -190,6 +204,6 @@ class StatsController extends GetxController {
   }
 
   Future<void> refreshInsight() async {
-    _loadAiInsight();
+    await _loadAiInsight();
   }
 }

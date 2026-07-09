@@ -11,7 +11,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/notifications/notification_service.dart';
+import '../../../core/services/analytics_service.dart';
+import '../../../core/services/app_settings.dart';
+import '../../../core/services/firestore_service.dart';
 import '../services/subscription_service.dart';
+import 'reminder_settings_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -30,9 +34,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Toggle states
   bool _sensorySafe = false;
-  bool _noRedBadges = true;
+  bool _largeText = false;
   bool _offlineMode = false;
-  bool _shareTherapist = false;
+  bool _analyticsOn = true;
 
   @override
   void initState() {
@@ -53,9 +57,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _userName = prefs.getString('user_name') ?? 'Friend';
         _brainType = prefs.getString('brain_type') ?? 'Not set';
         _sensorySafe = prefs.getBool('sensory_safe_ui') ?? false;
-        _noRedBadges = prefs.getBool('no_red_badges') ?? true;
+        _largeText = prefs.getBool('large_text') ?? false;
         _offlineMode = prefs.getBool('offline_mode') ?? false;
-        _shareTherapist = prefs.getBool('share_therapist') ?? false;
+        _analyticsOn = !(prefs.getBool('analytics_opt_out') ?? false);
       });
     }
   }
@@ -63,6 +67,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveToggle(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
+  }
+
+  void _notifyAppSettingsChanged() {
+    // Push accessibility changes to the live widget tree (no restart).
+    AppSettings.instance.reload();
+  }
+
+  void _openReminderSettings() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const ReminderSettingsSheet(),
+    );
   }
 
   Future<void> _confirmDeleteAllData() async {
@@ -144,6 +162,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _deleteAllData() async {
     try {
+      // Cloud first (best-effort), so we honor the promise that "Delete all
+      // data" removes the cloud mirror too — even if the local wipe races ahead.
+      try {
+        await FirestoreService().deleteAllCloudData();
+      } catch (_) {
+        // Offline / no account — local wipe below still proceeds.
+      }
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
       await DatabaseHelper.instance.deleteAllData();
@@ -165,41 +190,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _exportData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final db = await DatabaseHelper.instance.database;
+
+      // Full, portable snapshot — every row that is the user's, per the GDPR
+      // access right the privacy policy promises.
+      final habits = await db.query('habits');
+      final completions = await db.query('completions');
+      final focusSessions = await db.query('focus_sessions');
+      final moods = await db.query('moods');
+
       final data = {
         'user_name': _userName,
         'brain_type': _brainType,
+        'goals': _decodeGoals(prefs.getString('user_goals')),
         'dopamine_points': prefs.getInt('dopamine_points') ?? 0,
+        'habits': habits,
+        'completions': completions,
+        'focus_sessions': focusSessions,
+        'moods': moods,
         'settings': {
           'sensory_safe_ui': _sensorySafe,
-          'no_red_badges': _noRedBadges,
+          'large_text': _largeText,
           'offline_mode': _offlineMode,
-          'share_therapist': _shareTherapist,
+          'analytics_enabled': _analyticsOn,
         },
         'exported_at': DateTime.now().toIso8601String(),
+        'schema_version': 1,
       };
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(data);
-
       final tempPath = '${(await getTemporaryDirectory()).path}/nudge_export.json';
-      final file = File(tempPath);
-      await file.writeAsString(jsonString);
+      await File(tempPath).writeAsString(jsonString);
 
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(tempPath)],
           subject: 'Nudge Data Export',
-          text: 'Here is my Nudge app data export.',
+          text: 'My complete Nudge data export.',
         ),
       );
     } catch (e) {
-      Get.snackbar(
-        'Export failed',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppTheme.warningColor,
-        colorText: Colors.white,
-      );
+      _errorSnack('Export failed', e);
     }
+  }
+
+  List<String> _decodeGoals(String? raw) {
+    if (raw == null) return const [];
+    try {
+      return (jsonDecode(raw) as List).cast<String>();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// A human-readable 30-day summary the user can hand to a therapist or coach —
+  /// completion rate, focus time, and per-habit consistency. No raw internals.
+  Future<void> _shareProgressReport() async {
+    try {
+      final db = await DatabaseHelper.instance.database;
+      final now = DateTime.now();
+      final since = now.subtract(const Duration(days: 30));
+
+      final habits = await db.query('habits', where: 'isActive = 1');
+      final comps = await db.query(
+        'completions',
+        where: 'completedAt >= ?',
+        whereArgs: [since.toIso8601String()],
+      );
+      final focusMin = await DatabaseHelper.instance.getTotalFocusMinutesSince(since);
+
+      final byHabit = <String, int>{};
+      for (final c in comps) {
+        final id = c['habitId'] as String;
+        byHabit[id] = (byHabit[id] ?? 0) + 1;
+      }
+
+      final buf = StringBuffer()
+        ..writeln('Nudge — 30-day progress report')
+        ..writeln('For: $_userName')
+        ..writeln('Generated: ${now.toIso8601String().substring(0, 10)}')
+        ..writeln('')
+        ..writeln('Total check-ins: ${comps.length}')
+        ..writeln('Focus time: $focusMin minutes')
+        ..writeln('Active habits: ${habits.length}')
+        ..writeln('')
+        ..writeln('Per habit (check-ins in last 30 days):');
+      for (final h in habits) {
+        final id = h['id'] as String;
+        buf.writeln('  • ${h['name']}: ${byHabit[id] ?? 0}');
+      }
+      buf
+        ..writeln('')
+        ..writeln('Shared voluntarily by the user. Not a medical record.');
+
+      await SharePlus.instance.share(
+        ShareParams(text: buf.toString(), subject: 'My Nudge progress report'),
+      );
+    } catch (e) {
+      _errorSnack('Report failed', e);
+    }
+  }
+
+  void _errorSnack(String title, Object e) {
+    Get.snackbar(
+      title,
+      e.toString(),
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppTheme.warningColor,
+      colorText: Colors.white,
+    );
   }
 
   @override
@@ -235,7 +334,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 32),
 
             // Pro Card
-            if (!_isLoadingPro) _isPro ? _buildProStatusCard(context) : _buildProCard(context),
+            if (!_isLoadingPro)
+              _isPro
+                  ? _buildProStatusCard(context)
+                  : GestureDetector(
+                      onTap: () async {
+                        await Get.toNamed('/paywall');
+                        _loadData();
+                      },
+                      child: _buildProCard(context),
+                    ),
             const SizedBox(height: 32),
 
             // Preferences Section
@@ -251,39 +359,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildPreferenceToggle(
                     context: context,
                     title: 'Sensory-safe UI',
-                    subtitle: 'Simpler visuals, calmer experience',
+                    subtitle: 'Reduce motion & skip full-screen celebrations',
                     icon: Icons.auto_awesome_rounded,
                     value: _sensorySafe,
-                    onChanged: (val) => setState(() { _sensorySafe = val; _saveToggle('sensory_safe_ui', val); }),
+                    onChanged: (val) {
+                      setState(() => _sensorySafe = val);
+                      _saveToggle('sensory_safe_ui', val);
+                      _notifyAppSettingsChanged();
+                    },
                   ),
                   Divider(height: 1, indent: 72, endIndent: 24, color: context.colors.divider),
                   _buildPreferenceToggle(
                     context: context,
-                    title: 'No red badges',
-                    subtitle: 'Use amber instead of red',
-                    icon: Icons.verified_user_rounded,
-                    value: _noRedBadges,
-                    onChanged: (val) => setState(() { _noRedBadges = val; _saveToggle('no_red_badges', val); }),
+                    title: 'Larger text',
+                    subtitle: 'Bump up type size across the app',
+                    icon: Icons.format_size_rounded,
+                    value: _largeText,
+                    onChanged: (val) {
+                      setState(() => _largeText = val);
+                      _saveToggle('large_text', val);
+                      _notifyAppSettingsChanged();
+                    },
                   ),
                   Divider(height: 1, indent: 72, endIndent: 24, color: context.colors.divider),
                   _buildPreferenceToggle(
                     context: context,
                     title: 'Offline mode',
-                    subtitle: 'Use Nudge without internet',
-                    icon: Icons.cloud_download_rounded,
+                    subtitle: 'Keep everything on this device — no sync, AI, or analytics',
+                    icon: Icons.cloud_off_rounded,
                     value: _offlineMode,
-                    onChanged: (val) => setState(() { _offlineMode = val; _saveToggle('offline_mode', val); }),
+                    onChanged: (val) async {
+                      setState(() => _offlineMode = val);
+                      await _saveToggle('offline_mode', val);
+                      // Take effect immediately — no restart.
+                      await AnalyticsService.refreshPrivacyPrefs();
+                      await NotificationService().applyOfflinePreference();
+                    },
                   ),
                   Divider(height: 1, indent: 72, endIndent: 24, color: context.colors.divider),
                   _buildPreferenceToggle(
                     context: context,
-                    title: 'Share with therapist',
-                    subtitle: 'Export data for your care team',
-                    icon: Icons.people_alt_rounded,
-                    value: _shareTherapist,
-                    onChanged: (val) => setState(() { _shareTherapist = val; _saveToggle('share_therapist', val); }),
+                    title: 'Anonymous analytics',
+                    subtitle: 'Share content-free usage counts to improve Nudge',
+                    icon: Icons.insights_rounded,
+                    value: _analyticsOn,
+                    onChanged: (val) async {
+                      setState(() => _analyticsOn = val);
+                      await _saveToggle('analytics_opt_out', !val);
+                      await AnalyticsService.refreshPrivacyPrefs();
+                    },
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Reminders section
+            _buildSectionHeader(context, 'Reminders'),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: context.colors.surface,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: _buildActionLink(
+                context,
+                'Reminder times',
+                Icons.schedule_rounded,
+                _openReminderSettings,
               ),
             ),
             const SizedBox(height: 32),
@@ -316,12 +459,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'On-device AI, no tracking',
+                          'Local-first & private',
                           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, fontFamily: 'Inter', color: context.colors.text),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Your data stays on your device.\nNo ads. No tracking. Ever.',
+                          'Your habits live on your device. AI replies are processed by Google Gemini; anonymous, content-free analytics can be turned off above. No ads, ever. Offline mode keeps everything local.',
                           style: TextStyle(color: context.colors.textVariant, fontSize: 13, fontFamily: 'Inter', height: 1.4),
                         ),
                       ],
@@ -343,6 +486,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   _buildActionLink(context, 'Export my data', Icons.file_download_outlined, _exportData),
+                  Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
+                  _buildActionLink(context, 'Share progress report', Icons.summarize_outlined, _shareProgressReport),
                   Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),
                   _buildActionLink(context, 'Backup & restore', Icons.cloud_outlined, _showBackupInfo),
                   Divider(height: 1, indent: 64, endIndent: 24, color: context.colors.divider),

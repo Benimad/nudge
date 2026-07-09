@@ -21,7 +21,7 @@ class AppConfig {
   /// without a code change.
   static const String geminiModel = String.fromEnvironment(
     'GEMINI_MODEL',
-    defaultValue: 'gemini-2.5-flash',
+    defaultValue: 'gemma-4-26b-a4b-it',
   );
 
   /// True when the coach can reach a real model.

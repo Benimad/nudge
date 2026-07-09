@@ -99,7 +99,7 @@ class _ProGateState extends State<ProGate> {
                       fontSize: 12,
                       color: context.colors.primary,
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Quicksand',
+                      fontFamily: 'Inter',
                     ),
                   ),
                   Text(
@@ -107,7 +107,7 @@ class _ProGateState extends State<ProGate> {
                     style: TextStyle(
                       fontSize: 10,
                       color: context.colors.textVariant,
-                      fontFamily: 'Quicksand',
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ],

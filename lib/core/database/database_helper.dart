@@ -148,6 +148,27 @@ class DatabaseHelper {
     return totalSeconds ~/ 60;
   }
 
+  Future<void> insertMood({required int score, String? note}) async {
+    final db = await instance.database;
+    await db.insert('moods', {
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'score': score,
+      'note': note,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Average mood (1–5) since [since], or null if nothing logged.
+  Future<double?> getAverageMoodSince(DateTime since) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      'SELECT AVG(score) as avg FROM moods WHERE createdAt >= ?',
+      [since.toIso8601String()],
+    );
+    final avg = result.first['avg'];
+    return avg == null ? null : (avg as num).toDouble();
+  }
+
   Future<int> getSessionsCountForDate(DateTime date) async {
     final db = await instance.database;
     final start = DateTime(date.year, date.month, date.day).toIso8601String();

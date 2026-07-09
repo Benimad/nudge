@@ -6,6 +6,10 @@
 	<true/>
 	<key>com.posthog.posthog.AUTO_INIT</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Nudge uses the microphone only while you tap the mic to talk to your AI coach.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Nudge transcribes your voice to text so you can message your AI coach hands-free.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -7,6 +7,7 @@ import '../widgets/habit_list_item.dart';
 import '../widgets/progress_header.dart';
 import '../widgets/add_habit_sheet.dart';
 import '../widgets/personalization_card.dart';
+import '../widgets/mood_check_in.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../stats/screens/stats_screen.dart';
 import '../../ai_coach/screens/ai_coach_screen.dart';
@@ -34,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _navItems = [
     (icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
     (icon: Icons.bar_chart_rounded, activeIcon: Icons.bar_chart_rounded, label: 'Stats'),
-    (icon: Icons.mood_outlined, activeIcon: Icons.mood_rounded, label: 'AI Coach'),
+    (icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'AI Coach'),
     (icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings'),
   ];
 
@@ -55,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 62,
                 child: FloatingActionButton(
                   onPressed: () => _showAddHabitSheet(context),
+                  tooltip: 'Add a habit',
                   backgroundColor: context.colors.primary,
                   elevation: 0,
                   highlightElevation: 0,
@@ -99,7 +101,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final item = _navItems[index];
     final isSelected = _currentIndex == index;
     final color = isSelected ? context.colors.primary : context.colors.inactiveGray;
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${item.label} tab',
+      child: GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() => _currentIndex = index);
@@ -126,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(item.label),
           ),
         ],
+      ),
       ),
     );
   }
@@ -166,6 +173,7 @@ class _HomeBody extends StatelessWidget {
                 )),
 
             const PersonalizationCard(),
+            const MoodCheckIn(),
 
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
@@ -218,12 +226,12 @@ class _HomeBody extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Add your first habit',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.colors.text, fontFamily: 'Quicksand'),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.colors.text, fontFamily: 'Inter'),
           ),
           const SizedBox(height: 8),
           Text(
             'Start with just one small step',
-            style: TextStyle(color: context.colors.textVariant, fontFamily: 'Quicksand'),
+            style: TextStyle(color: context.colors.textVariant, fontFamily: 'Inter'),
           ),
           const SizedBox(height: 24),
           ElevatedButton(

@@ -105,7 +105,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
                 color: context.colors.text,
-                fontFamily: 'Quicksand',
+                fontFamily: 'Inter',
               ),
             ),
             const SizedBox(height: 8),
@@ -114,7 +114,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
               style: TextStyle(
                 fontSize: 14,
                 color: context.colors.textVariant,
-                fontFamily: 'Quicksand',
+                fontFamily: 'Inter',
               ),
             ),
             const SizedBox(height: 40),
@@ -158,7 +158,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
-                            fontFamily: 'Quicksand',
+                            fontFamily: 'Inter',
                             color: context.colors.text,
                           ),
                         ),
@@ -168,7 +168,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             color: context.colors.textVariant,
-                            fontFamily: 'Quicksand',
+                            fontFamily: 'Inter',
                           ),
                         ),
                       ],
@@ -205,7 +205,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: 16,
-                    fontFamily: 'Quicksand',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
@@ -219,7 +219,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                   style: TextStyle(
                     color: context.colors.textVariant,
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Quicksand',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
@@ -257,7 +257,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
-                  fontFamily: 'Quicksand',
+                  fontFamily: 'Inter',
                   color: context.colors.text,
                 ),
               ),
@@ -268,7 +268,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: context.colors.text,
-                fontFamily: 'Quicksand',
+                fontFamily: 'Inter',
               ),
             ),
             const SizedBox(width: 8),

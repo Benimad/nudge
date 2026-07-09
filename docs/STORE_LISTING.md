@@ -35,9 +35,10 @@ the rest of us — ADHD, autistic, anxious, or just overwhelmed.
   shaming your gaps.
 
 **Private by default**
-- Your habits live on your device. Offline mode keeps everything there.
-- No ads. No tracking. No selling data. Ever.
-- Export everything, or share a report with your therapist — your call.
+- Your habits live on your device. Offline mode keeps everything local.
+- No ads, ever. We never sell your data. Analytics are anonymous, content-free,
+  and can be switched off in Settings.
+- Export everything, or share a progress report with your therapist — your call.
 
 Start with one tiny habit. That's the whole method.
 

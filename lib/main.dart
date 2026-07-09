@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'core/database/database_helper.dart';
 import 'core/notifications/notification_service.dart';
+import 'core/services/app_settings.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/analytics_service.dart';
+import 'core/services/firestore_service.dart';
 import 'features/settings/services/subscription_service.dart';
 import 'features/splash/screens/splash_screen.dart';
 import 'features/onboarding/screens/welcome_screen.dart';
@@ -26,13 +29,14 @@ import 'features/settings/screens/paywall_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Accessibility prefs are needed for the very first frame.
+  await AppSettings.instance.load();
+
+  // Critical-path only: Firebase (identity) + local database. Everything else
+  // is kicked off after the first frame so a cold start on poor network never
+  // hangs on a network round-trip.
   final firebaseInitialized = await FirebaseService.initialize();
-  if (!firebaseInitialized) {
-    debugPrint('⚠️ App running without Firebase - some features may be limited');
-  } else {
-    // Every user needs a Firebase identity for Firestore sync to have
-    // somewhere to write, whether or not they ever tap "Sign in with Google".
+  if (firebaseInitialized) {
     try {
       if (AuthService().currentUser == null) {
         await AuthService().signInAnonymously();
@@ -40,46 +44,59 @@ void main() async {
     } catch (e) {
       debugPrint('⚠️ Anonymous sign-in error: $e');
     }
+  } else {
+    debugPrint('⚠️ App running without Firebase - some features may be limited');
   }
 
-  // Initialize Database
   try {
     await DatabaseHelper.instance.database;
-    debugPrint('✅ Database initialized');
   } catch (e) {
     debugPrint('❌ Database init error: $e');
   }
 
-  // Initialize RevenueCat
+  Get.put(HomeController(), permanent: true);
+  Get.put(ChatController(), permanent: true);
+  Get.put(BodyDoublingController(), permanent: true);
+
+  runApp(const NudgeApp());
+
+  // Deferred, non-blocking initialization.
+  unawaited(_initDeferred(firebaseInitialized));
+}
+
+Future<void> _initDeferred(bool firebaseInitialized) async {
   try {
     await SubscriptionService.init();
-    debugPrint('✅ RevenueCat initialized');
   } catch (e) {
     debugPrint('⚠️ RevenueCat init error: $e');
   }
-
-  // Initialize Notifications
   try {
     await NotificationService().init();
-    debugPrint('✅ Notifications initialized');
   } catch (e) {
     debugPrint('⚠️ Notification init error: $e');
   }
-
-  // Initialize Analytics (no-op unless POSTHOG_API_KEY is dart-defined)
   try {
     await AnalyticsService.init();
   } catch (e) {
     debugPrint('⚠️ Analytics init error: $e');
   }
 
-  // Initialize controllers globally so IndexedStack children can find them,
-  // and so a running focus-session timer survives navigating away from it.
-  Get.put(HomeController(), permanent: true);
-  Get.put(ChatController(), permanent: true);
-  Get.put(BodyDoublingController(), permanent: true);
-
-  runApp(const NudgeApp());
+  // Cloud → local restore: if a signed-in user has an empty local database
+  // (e.g. fresh install), pull their habits and history back. Non-destructive.
+  if (firebaseInitialized) {
+    try {
+      final user = AuthService().currentUser;
+      if (user != null && !user.isAnonymous) {
+        final home = Get.find<HomeController>();
+        if (home.habits.isEmpty) {
+          final restored = await FirestoreService().restoreFromCloud();
+          if (restored > 0) await home.refreshData();
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Cloud restore skipped: $e');
+    }
+  }
 }
 
 class NudgeApp extends StatefulWidget {
@@ -90,106 +107,108 @@ class NudgeApp extends StatefulWidget {
 }
 
 class _NudgeAppState extends State<NudgeApp> {
-  double _textScale = 1.0;
-  bool _reduceAnimations = false;
-  bool _highContrast = false;
-  bool _isLoading = true;
+  final _settings = AppSettings.instance;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _applyMotion();
+    _settings.reduceMotion.addListener(_applyMotion);
+  }
+
+  @override
+  void dispose() {
+    _settings.reduceMotion.removeListener(_applyMotion);
+    super.dispose();
+  }
+
+  /// Reduce-motion is a global concern for flutter_animate (which drives most
+  /// of the app's animation), so we collapse its default duration to zero.
+  void _applyMotion() {
+    Animate.defaultDuration =
+        _settings.reduceMotion.value ? Duration.zero : const Duration(milliseconds: 300);
   }
 
   void _registerActivity() {
     try {
       Get.find<HomeController>().resetParalysisTimer();
-    } catch (_) {
-      // HomeController isn't registered yet (very first frame) — ignore.
-    }
+    } catch (_) {}
   }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _textScale = (prefs.getBool('large_text') ?? false) ? 1.2 : 1.0;
-        _reduceAnimations = prefs.getBool('sensory_safe_ui') ?? false;
-        _highContrast = prefs.getBool('high_contrast') ?? false;
-        _isLoading = false;
-      });
-    }
-  }
+  ThemeData _highContrastLight() => AppTheme.lightTheme.copyWith(
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF3B2CA0),
+          secondary: Color(0xFF00563B),
+          surface: Colors.white,
+          onSurface: Colors.black,
+        ),
+        scaffoldBackgroundColor: Colors.white,
+      );
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      // Settings load in a few frames; show a blank brand-colored surface that
-      // matches the splash background so launch reads as one continuous scene
-      // instead of a white flash + spinner.
-      final dark = WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: dark ? AppColors.dark.background : AppColors.light.background,
-        ),
-      );
-    }
-
-    final theme = _highContrast ? AppTheme.lightTheme.copyWith(
-      colorScheme: const ColorScheme.light(
-        primary: Color(0xFF0000FF),
-        secondary: Color(0xFF008000),
-        surface: Colors.white,
-        onSurface: Colors.black,
-      ),
-      scaffoldBackgroundColor: Colors.white,
-    ) : AppTheme.lightTheme;
-
-    return GetMaterialApp(
-      title: 'Nudge',
-      debugShowCheckedModeBanner: false,
-      theme: theme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      navigatorKey: Get.key,
-      initialRoute: '/splash',
-      defaultTransition: Transition.cupertino,
-      transitionDuration: const Duration(milliseconds: 320),
-      builder: (context, child) {
-        return Listener(
-          onPointerDown: (_) => _registerActivity(),
-          onPointerMove: (_) => _registerActivity(),
-          behavior: HitTestBehavior.translucent,
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(_textScale),
-              disableAnimations: _reduceAnimations,
-            ),
-            child: child!,
-          ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: _settings.highContrast,
+      builder: (context, highContrast, _) {
+        return ValueListenableBuilder<double>(
+          valueListenable: _settings.extraTextScale,
+          builder: (context, extraScale, _) {
+            return ValueListenableBuilder<bool>(
+              valueListenable: _settings.reduceMotion,
+              builder: (context, reduceMotion, _) {
+                return GetMaterialApp(
+                  title: 'Nudge',
+                  debugShowCheckedModeBanner: false,
+                  theme: highContrast ? _highContrastLight() : AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: ThemeMode.system,
+                  navigatorKey: Get.key,
+                  initialRoute: '/splash',
+                  defaultTransition: Transition.cupertino,
+                  transitionDuration: Duration(milliseconds: reduceMotion ? 0 : 320),
+                  builder: (context, child) {
+                    // Compose OUR extra scale on top of the OS setting instead of
+                    // replacing it, so a low-vision user's system font size still
+                    // counts.
+                    final osFactor = MediaQuery.textScalerOf(context).scale(100) / 100;
+                    return Listener(
+                      onPointerDown: (_) => _registerActivity(),
+                      onPointerMove: (_) => _registerActivity(),
+                      behavior: HitTestBehavior.translucent,
+                      child: MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          textScaler: TextScaler.linear(osFactor * extraScale),
+                          disableAnimations: reduceMotion,
+                        ),
+                        child: child!,
+                      ),
+                    );
+                  },
+                  getPages: [
+                    GetPage(name: '/', page: () => const WelcomeScreen()),
+                    GetPage(
+                      name: '/splash',
+                      page: () => const SplashScreen(),
+                      transition: Transition.fadeIn,
+                      transitionDuration: const Duration(milliseconds: 350),
+                    ),
+                    GetPage(name: '/onboarding/welcome', page: () => const WelcomeScreen()),
+                    GetPage(name: '/onboarding/goals', page: () => const GoalsScreen()),
+                    GetPage(name: '/onboarding/reminders', page: () => const ReminderSetupScreen()),
+                    GetPage(name: '/home', page: () => const HomeScreen()),
+                    GetPage(name: '/paralysis-mode', page: () => const ParalysisModeScreen()),
+                    GetPage(name: '/body-doubling', page: () => const BodyDoublingScreen()),
+                    GetPage(name: '/ai-coach', page: () => const AiCoachScreen()),
+                    GetPage(name: '/stats', page: () => const StatsScreen()),
+                    GetPage(name: '/settings', page: () => const SettingsScreen()),
+                    GetPage(name: '/paywall', page: () => const PaywallScreen()),
+                  ],
+                );
+              },
+            );
+          },
         );
       },
-      getPages: [
-        GetPage(name: '/', page: () => const WelcomeScreen()),
-        GetPage(
-          name: '/splash',
-          page: () => const SplashScreen(),
-          // The splash fades itself out, so the route underneath just fades in.
-          transition: Transition.fadeIn,
-          transitionDuration: const Duration(milliseconds: 350),
-        ),
-        GetPage(name: '/onboarding/welcome', page: () => const WelcomeScreen()),
-        GetPage(name: '/onboarding/goals', page: () => const GoalsScreen()),
-        GetPage(name: '/onboarding/reminders', page: () => const ReminderSetupScreen()),
-        GetPage(name: '/home', page: () => const HomeScreen()),
-        GetPage(name: '/paralysis-mode', page: () => const ParalysisModeScreen()),
-        GetPage(name: '/body-doubling', page: () => const BodyDoublingScreen()),
-        GetPage(name: '/ai-coach', page: () => const AiCoachScreen()),
-        GetPage(name: '/stats', page: () => const StatsScreen()),
-        GetPage(name: '/settings', page: () => const SettingsScreen()),
-        GetPage(name: '/paywall', page: () => const PaywallScreen()),
-      ],
     );
   }
 }

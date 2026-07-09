@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../controllers/body_doubling_controller.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/pro_gate.dart';
+import '../../settings/services/subscription_service.dart';
 import '../../../shared/widgets/brain_mascot.dart';
 
 class BodyDoublingScreen extends StatelessWidget {
@@ -16,69 +16,79 @@ class BodyDoublingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.colors.background,
       body: SafeArea(
-        child: ProGate(
-          featureName: 'Body Doubling',
-          child: Column(
-            children: [
-              // Custom Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: context.colors.surface,
-                          shape: BoxShape.circle,
-                          boxShadow: context.colors.cardShadow,
-                        ),
-                        child: Icon(Icons.chevron_left_rounded, color: context.colors.text, size: 28),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            // Custom Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: context.isDarkTheme ? const Color(0xFF16332A) : const Color(0xFFEAF8F1),
-                        borderRadius: BorderRadius.circular(20),
+                        color: context.colors.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: context.colors.cardShadow,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.people_alt_outlined, color: context.colors.success, size: 16),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Body doubling session',
-                            style: TextStyle(
-                              color: context.colors.success,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Inter',
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: Icon(Icons.chevron_left_rounded, color: context.colors.text, size: 28),
                     ),
-                    const SizedBox(width: 44), // To balance the back button
-                  ],
-                ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: context.isDarkTheme ? const Color(0xFF16332A) : const Color(0xFFEAF8F1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.people_alt_outlined, color: context.colors.success, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Body doubling session',
+                          style: TextStyle(
+                            color: context.colors.success,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 44), // To balance the back button
+                ],
               ),
-              
-              Expanded(
-                child: Obx(() {
-                  if (!controller.isSessionActive.value && !controller.isPaused.value) {
-                    return _buildSetupView(context, controller);
-                  }
-                  return _buildActiveSessionView(context, controller);
-                }),
-              ),
-            ],
-          ),
+            ),
+
+            Expanded(
+              child: Obx(() {
+                if (!controller.isSessionActive.value && !controller.isPaused.value) {
+                  return _buildSetupView(context, controller);
+                }
+                return _buildActiveSessionView(context, controller);
+              }),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  /// Free users get one focus session a day; beyond that we route to the
+  /// paywall instead of silently doing nothing.
+  Future<void> _startGated(BuildContext context, BodyDoublingController controller,
+      String task, int minutes) async {
+    final sub = SubscriptionService();
+    if (await sub.canStartFocus()) {
+      await sub.registerFocusUse();
+      controller.startSession(task, minutes);
+    } else {
+      Get.toNamed('/paywall');
+    }
   }
 
   Widget _buildSetupView(BuildContext context, BodyDoublingController controller) {
@@ -154,7 +164,7 @@ class BodyDoublingScreen extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {
                 if (taskController.text.isNotEmpty) {
-                  controller.startSession(taskController.text, selectedMinutes);
+                  _startGated(context, controller, taskController.text, selectedMinutes);
                 }
               },
               style: ElevatedButton.styleFrom(

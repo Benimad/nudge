@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../habits/controllers/home_controller.dart';
 import '../../habits/models/habit_model.dart';
-import '../../ai_coach/services/ai_service.dart';
+import '../../ai_coach/controllers/chat_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/brain_mascot.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
@@ -27,19 +27,12 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
       _selectedHabit = habit;
     });
 
-    final aiService = AiCoachService();
-    await Future.delayed(const Duration(milliseconds: 500));
-    final rawSteps = aiService.getTaskBreakdown(habit.name);
-    
-    // Convert to map with title and dummy time
-    final times = ['30 sec', '2 min', '5 min', '1 min'];
-    final steps = rawSteps.asMap().entries.map((e) {
-      return {
-        'title': e.value,
-        'time': times[e.key % times.length],
-      };
-    }).toList();
+    // Real, model-generated micro-steps (falls back to curated templates
+    // offline, on error, or when the user disabled AI help for this habit).
+    final steps = await Get.find<ChatController>()
+        .getTaskBreakdown(habit.name, useAi: habit.aiBreakdownEnabled);
 
+    if (!mounted) return;
     setState(() {
       _microSteps = steps;
       _stepChecked = List.filled(steps.length, false);
@@ -201,7 +194,7 @@ class _ParalysisModeScreenState extends State<ParalysisModeScreen> {
                             ),
                           ),
                           child: Text(
-                            'I notice you\'ve been inactive for 40 min.\n\nWant me to break your task into micro-steps?',
+                            'No pressure at all — if something feels too big right now, I can break it into 30-second steps.\n\nWant to try one together?',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,

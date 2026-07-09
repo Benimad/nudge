@@ -35,10 +35,11 @@ no ads. Turn on Offline mode and nothing leaves your phone at all.
   session ends.
 - **Purchase status** — subscriptions are processed by Google Play / Apple and
   RevenueCat. We never see your payment details, only an entitlement flag.
-- **Crash reports & analytics** — Firebase Crashlytics receives crash traces.
-  If product analytics are enabled in a build, PostHog receives anonymous
-  usage events (e.g. "habit_completed") — never habit names' content beyond
-  the title you gave the habit, and never AI coach message content.
+- **Analytics** — if product analytics are enabled in a build, PostHog receives
+  anonymous, content-free usage events (e.g. "habit_completed" with only a point
+  count). We never send habit names, note text, mood entries, or AI coach
+  message content. You can turn analytics off in Settings, and Offline mode
+  disables them entirely.
 
 ## What Nudge does NOT do
 
