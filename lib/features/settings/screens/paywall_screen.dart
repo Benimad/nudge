@@ -285,12 +285,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TextButton(
-                    onPressed: () => _openLegal('https://nudgeapp.co/terms'),
+                    onPressed: () => _openLegal('https://benimad.github.io/nudge/terms.html'),
                     child: Text('Terms', style: TextStyle(color: context.colors.textVariant, fontSize: 12, fontFamily: 'Inter')),
                   ),
                   Text('·', style: TextStyle(color: context.colors.textVariant)),
                   TextButton(
-                    onPressed: () => _openLegal('https://nudgeapp.co/privacy'),
+                    onPressed: () => _openLegal('https://benimad.github.io/nudge/privacy-policy.html'),
                     child: Text('Privacy', style: TextStyle(color: context.colors.textVariant, fontSize: 12, fontFamily: 'Inter')),
                   ),
                 ],

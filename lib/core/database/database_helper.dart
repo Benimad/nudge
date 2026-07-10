@@ -20,12 +20,28 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
       onOpen: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
     );
+  }
+
+  // v1 databases predate the moods table (it was added to _createDB without a
+  // version bump, so installs from before the mood check-in never got it).
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS moods (
+          id TEXT PRIMARY KEY,
+          score INTEGER NOT NULL,
+          note TEXT,
+          createdAt TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {

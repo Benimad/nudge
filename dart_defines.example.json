@@ -1,0 +1,7 @@
+{
+  "POSTHOG_API_KEY": "phc_xxx",
+  "GEMINI_API_KEY": "",
+  "GEMINI_MODEL": "gemini-2.5-flash",
+  "REVENUECAT_ANDROID_KEY": "goog_xxx",
+  "REVENUECAT_IOS_KEY": "appl_xxx"
+}

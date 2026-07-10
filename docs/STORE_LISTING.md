@@ -63,10 +63,14 @@ ADHD, habit tracker, focus timer, routines, neurodivergent, body doubling
 | Shared with third parties? | Processors only: Firebase (sync/crash), Google Gemini (AI replies), RevenueCat (subscriptions), PostHog (anonymous analytics, if enabled) |
 | Sold? | No |
 
+## Legal URLs (already live via GitHub Pages)
+- Privacy policy: https://benimad.github.io/nudge/privacy-policy.html
+- Terms of service: https://benimad.github.io/nudge/terms.html
+
 ## Release checklist (Play Console)
-1. Privacy policy URL published and linked.
-2. `flutter build appbundle --release` with all `--dart-define` keys
-   (see lib/core/config/app_config.dart header for the full command).
+1. Privacy policy URL (above) pasted into the Play Console listing.
+2. `flutter build appbundle --release --dart-define-from-file=dart_defines.json`
+   (template: dart_defines.example.json; see lib/core/config/app_config.dart).
 3. Internal testing track → sandbox purchase test → production.
 4. Screenshots: welcome, home with habits, celebration, stats, paralysis mode,
    settings (light + dark). The UI is showcase-grade — use real screens, not

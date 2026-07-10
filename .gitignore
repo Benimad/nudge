@@ -43,6 +43,8 @@ app.*.map.json
 *_secrets.dart
 *.env
 .env*
+# Real API keys for --dart-define-from-file (template: dart_defines.example.json)
+dart_defines.json
 
 # Android Studio will place build artifacts here
 /android/app/debug

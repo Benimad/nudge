@@ -110,16 +110,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _openHelpAndSupport() async {
+    // Same support address the published privacy policy lists.
     final uri = Uri(
       scheme: 'mailto',
-      path: 'support@nudgeapp.co',
+      path: 'adamlaalami72@gmail.com',
       query: 'subject=${Uri.encodeComponent('Nudge Feedback')}',
     );
     if (!await launchUrl(uri)) {
       if (mounted) {
         Get.snackbar(
           'Couldn\'t open email',
-          'Reach us at support@nudgeapp.co',
+          'Reach us at adamlaalami72@gmail.com',
           snackPosition: SnackPosition.BOTTOM,
         );
       }

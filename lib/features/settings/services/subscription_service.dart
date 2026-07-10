@@ -22,10 +22,14 @@ class SubscriptionService {
       String.fromEnvironment('REVENUECAT_IOS_KEY', defaultValue: 'appl_demo_key');
   static const String _proEntitlement = 'pro';
 
-  /// True when real store keys are present. In demo mode we don't pretend to
-  /// have a billing backend — the paywall explains it instead of failing.
-  static bool get isConfigured =>
-      !_apiKeyAndroid.contains('demo') && !_apiKeyIos.contains('demo');
+  /// True when a real store key is present for THIS platform, so an
+  /// Android-only launch works without an iOS key (and vice versa). In demo
+  /// mode we don't pretend to have a billing backend — the paywall explains it
+  /// instead of failing.
+  static bool get isConfigured {
+    final key = Platform.isAndroid ? _apiKeyAndroid : _apiKeyIos;
+    return !key.contains('demo');
+  }
 
   // Free-tier allowances.
   static const int aiMessagesPerDayFree = 5;

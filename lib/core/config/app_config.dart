@@ -1,12 +1,11 @@
 /// Nudge app — API configuration.
 ///
-/// All values are injected at build time and never committed to source:
-///   flutter build apk \
-///     --dart-define=GEMINI_API_KEY=your_key \
-///     --dart-define=GEMINI_MODEL=gemini-2.5-flash \
-///     --dart-define=POSTHOG_API_KEY=phc_xxx \
-///     --dart-define=REVENUECAT_ANDROID_KEY=goog_xxx \
-///     --dart-define=REVENUECAT_IOS_KEY=appl_xxx
+/// All values are injected at build time and never committed to source.
+/// Real keys live in `dart_defines.json` at the project root (gitignored;
+/// template in `dart_defines.example.json`):
+///   flutter build apk --dart-define-from-file=dart_defines.json
+///   flutter run --dart-define-from-file=dart_defines.json
+/// Individual --dart-define=KEY=value flags still work and override the file.
 ///
 /// With no GEMINI_API_KEY the AI coach falls back to its offline, ADHD-specific
 /// local knowledge base — the feature degrades gracefully rather than breaking.
@@ -18,10 +17,11 @@ class AppConfig {
 
   /// Default is a broadly available, low-latency model with a generous free
   /// tier; override with --dart-define=GEMINI_MODEL=... to switch models
-  /// without a code change.
+  /// without a code change. Must be a Gemini-family model: the coach relies on
+  /// systemInstruction and JSON responseSchema, which Gemma models reject.
   static const String geminiModel = String.fromEnvironment(
     'GEMINI_MODEL',
-    defaultValue: 'gemma-4-26b-a4b-it',
+    defaultValue: 'gemini-2.5-flash',
   );
 
   /// True when the coach can reach a real model.
