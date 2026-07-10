@@ -90,15 +90,24 @@ class AuthService {
     return cred;
   }
 
+  /// Best-effort: PostHog and RevenueCat may not be initialized yet (their
+  /// setup is deferred past first frame) or not configured at all in this
+  /// build. Identity sync must never fail the sign-in that triggered it.
   Future<void> _syncIdentity(String userId) async {
-    await Posthog().identify(userId: userId);
-    await Purchases.logIn(userId);
+    try {
+      await Posthog().identify(userId: userId);
+    } catch (_) {}
+    try {
+      await Purchases.logIn(userId);
+    } catch (_) {}
   }
 
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      Purchases.logOut(),
-    ]);
+    // RevenueCat logOut throws when unconfigured (demo builds) or already
+    // anonymous — either way it must not block the Firebase sign-out.
+    try {
+      await Purchases.logOut();
+    } catch (_) {}
+    await _auth.signOut();
   }
 }
