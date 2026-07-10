@@ -51,6 +51,19 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   sqflite_common_ffi: ^2.3.3
+  flutter_launcher_icons: ^0.14.4
+
+# Launcher icons are generated from the brand logo:
+#   dart run flutter_launcher_icons
+# The Android 13+ themed (monochrome) icon is re-added by hand in
+# mipmap-anydpi-v26/ic_launcher.xml after regenerating — see that file.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#7862E8"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
