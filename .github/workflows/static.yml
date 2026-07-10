@@ -36,8 +36,10 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          # Publish only docs/ — the legal pages the app and Play listing link
+          # to live at the site root (…/nudge/privacy-policy.html), and the
+          # rest of the repo shouldn't be served as a website.
+          path: 'docs'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
