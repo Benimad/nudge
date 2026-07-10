@@ -122,6 +122,11 @@ class AiCoachService {
     final habitsSummary = context?['habits_summary'] as String?;
     final patterns = context?['patterns'] as String?;
     final name = context?['name'] as String?;
+    final bestDay = context?['best_day'] as String?;
+    final trend = context?['trend'] as String?;
+    final missed = (context?['missed_habits'] as List?)?.cast<String>() ?? const [];
+    final mood = context?['mood'] as String?;
+    final memory = context?['memory'] as String?;
 
     final lines = <String>[
       'Time of day: $timeOfDay',
@@ -130,9 +135,86 @@ class AiCoachService {
       if (goals.isNotEmpty) 'Goals they chose: ${goals.join(', ')}',
       if (habitsSummary != null && habitsSummary.isNotEmpty) 'Current habits: $habitsSummary',
       if (patterns != null && patterns.isNotEmpty) 'Recent patterns: $patterns',
+      if (bestDay != null) 'Their strongest day of the week lately: $bestDay',
+      if (trend != null) 'Completion trend: $trend',
+      if (missed.isNotEmpty)
+        "Habits they haven't touched in 3+ days (be gentle, never shaming): ${missed.join(', ')}",
+      if (mood != null) 'Average self-reported mood this week: $mood out of 5',
     ];
-    return 'Context about this person — ${lines.join('; ')}.\n\n'
+    final memoryBlock = (memory != null && memory.trim().isNotEmpty)
+        ? 'What you remember about them from earlier conversations: ${memory.trim()}\n\n'
+        : '';
+    return '${memoryBlock}Context about this person — ${lines.join('; ')}.\n\n'
         'Their message: "$userInput"';
+  }
+
+  // ── Coach memory (persisted across conversations) ────────────────────────────
+
+  /// Folds recent conversation turns into a compact running profile of the
+  /// user, so the next conversation starts already knowing them. Throws on
+  /// any failure — callers treat memory as strictly best-effort.
+  Future<String> updateMemory(String currentMemory, List<CoachTurn> recentTurns) async {
+    if (!AppConfig.aiConfigured) throw StateError('No AI key configured');
+    final model = GenerativeModel(
+      model: AppConfig.geminiModel,
+      apiKey: AppConfig.geminiApiKey,
+      systemInstruction: Content.system(
+        'You maintain a compact memory profile of one habit-tracker user for '
+        'their ADHD coach. Merge the new conversation into the existing '
+        'profile. Keep only durable, useful facts: their struggles, what '
+        'strategies worked or failed for them, preferences, life context, and '
+        'wins worth celebrating later. Drop small talk. Maximum 90 words. '
+        'Plain text only.',
+      ),
+      generationConfig: GenerationConfig(temperature: 0.3, maxOutputTokens: 160),
+    );
+    final transcript = recentTurns
+        .map((t) => '${t.isUser ? 'User' : 'Coach'}: ${t.text}')
+        .join('\n');
+    final res = await model.generateContent([
+      Content.text(
+        'Existing profile:\n${currentMemory.isEmpty ? '(none yet)' : currentMemory}\n\n'
+        'New conversation:\n$transcript\n\n'
+        'Updated profile:',
+      ),
+    ]);
+    final text = res.text?.trim();
+    if (text == null || text.isEmpty) throw StateError('Empty memory update');
+    return text;
+  }
+
+  // ── Model-written weekly insight ─────────────────────────────────────────────
+
+  /// A short, personal weekly insight written by the live model from real
+  /// stats. Throws on failure — callers fall back to [getWeeklyInsight].
+  Future<String> generateWeeklyInsight(Map<String, dynamic> stats) async {
+    if (!AppConfig.aiConfigured) throw StateError('No AI key configured');
+    final model = GenerativeModel(
+      model: AppConfig.geminiModel,
+      apiKey: AppConfig.geminiApiKey,
+      systemInstruction: Content.system(
+        'You write one short weekly insight (2-3 sentences) for a user of an '
+        'ADHD habit tracker. Be warm, specific to the numbers given, and '
+        'completely shame-free — a low week gets compassion and one tiny '
+        'suggestion, never guilt. Second person. Plain text, no markdown, no '
+        'emojis.',
+      ),
+      generationConfig: GenerationConfig(temperature: 0.7, maxOutputTokens: 120),
+    );
+    final rate = ((stats['completion_rate'] ?? 0.0) as double) * 100;
+    final improvement = ((stats['improvement'] ?? 0.0) as double) * 100;
+    final res = await model.generateContent([
+      Content.text(
+        'This week: ${rate.toStringAsFixed(0)}% of habits completed. '
+        'Best day: ${stats['best_day'] ?? 'unknown'}. '
+        'Longest current streak: ${stats['streak'] ?? 0} days. '
+        'Change vs last week: ${improvement >= 0 ? '+' : ''}${improvement.toStringAsFixed(0)}%. '
+        '${stats['mood_note'] ?? ''}',
+      ),
+    ]);
+    final text = res.text?.trim();
+    if (text == null || text.isEmpty) throw StateError('Empty insight');
+    return text;
   }
 
   // ── On-device fallback (offline / no key / error) ────────────────────────────

@@ -5,9 +5,11 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/ai_service.dart';
+import '../services/coach_insights.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/services/analytics_service.dart';
 import '../../habits/controllers/home_controller.dart';
+import '../../habits/repositories/habit_repository.dart';
 import '../../settings/services/subscription_service.dart';
 
 class ChatController extends GetxController {
@@ -143,6 +145,7 @@ class ChatController extends GetxController {
       isLoading.value = false;
       unawaited(SubscriptionService().registerAiUse());
       await _saveMessage(messages.last);
+      unawaited(_maybeUpdateMemory());
     } catch (_) {
       // On-device fallback — always works, never shows a raw error.
       isLoading.value = false;
@@ -172,7 +175,9 @@ class ChatController extends GetxController {
   }
 
   /// Builds a rich personalization snapshot from real user data so the coach
-  /// feels like it actually knows them.
+  /// feels like it actually knows them: current habits and streaks, behavioral
+  /// patterns mined from completion history, this week's mood, and the
+  /// persisted memory of past conversations.
   Future<Map<String, dynamic>> _buildContext() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -199,6 +204,36 @@ class ChatController extends GetxController {
       patterns = 'Today: $done of $total habits done so far. Best current streak: ${best}d.';
     } catch (_) {}
 
+    // Behavioral signals from full completion history — best-effort; the
+    // coach still works with whatever subset is available.
+    String? bestDay;
+    String? trend;
+    List<String> missed = const [];
+    try {
+      final repo = HabitRepository();
+      final habitsResult = await repo.getAllHabits();
+      final completions = await repo.getAllCompletions();
+      if (habitsResult.isSuccess) {
+        final insights = CoachInsights.compute(
+          habits: habitsResult.data!,
+          completions: completions,
+        );
+        bestDay = insights.bestDayOfWeek;
+        final deltaPct = (insights.weekOverWeekDelta * 100).round();
+        if (deltaPct != 0) {
+          trend = '${deltaPct > 0 ? '+' : ''}$deltaPct% vs last week';
+        }
+        missed = insights.recentlyMissedHabits;
+      }
+    } catch (_) {}
+
+    String? mood;
+    try {
+      final avg = await DatabaseHelper.instance
+          .getAverageMoodSince(DateTime.now().subtract(const Duration(days: 7)));
+      if (avg != null) mood = avg.toStringAsFixed(1);
+    } catch (_) {}
+
     final hour = DateTime.now().hour;
     return {
       'time_of_day': hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening',
@@ -207,15 +242,47 @@ class ChatController extends GetxController {
       'goals': goals,
       'habits_summary': habitsSummary,
       'patterns': patterns,
+      if (bestDay != null) 'best_day': bestDay,
+      if (trend != null) 'trend': trend,
+      'missed_habits': missed,
+      if (mood != null) 'mood': mood,
+      'memory': prefs.getString(_memoryKey) ?? '',
     };
+  }
+
+  // ── Coach memory: a compact profile that persists across conversations ───────
+
+  static const _memoryKey = 'coach_memory';
+  static const _memoryCounterKey = 'coach_memory_msgs_since';
+  static const _memoryUpdateEvery = 4; // user messages between refreshes
+
+  /// After every few exchanges, fold the recent turns into the persisted
+  /// profile. Strictly best-effort: failures leave the old memory in place,
+  /// and this never consumes the user's chat quota (it's one cheap background
+  /// call per several messages).
+  Future<void> _maybeUpdateMemory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final since = (prefs.getInt(_memoryCounterKey) ?? 0) + 1;
+      if (since < _memoryUpdateEvery) {
+        await prefs.setInt(_memoryCounterKey, since);
+        return;
+      }
+      // Take the last few exchanges (both sides) as the merge input.
+      final recent = messages.length > 8 ? messages.sublist(messages.length - 8) : messages;
+      final updated = await _aiService.updateMemory(
+        prefs.getString(_memoryKey) ?? '',
+        recent.map((m) => CoachTurn(m.text, m.isUser)).toList(),
+      );
+      await prefs.setString(_memoryKey, updated);
+      await prefs.setInt(_memoryCounterKey, 0);
+    } catch (_) {
+      // Keep the previous memory; try again after the next message.
+    }
   }
 
   Future<List<Map<String, String>>> getTaskBreakdown(String taskName, {bool useAi = true}) {
     return _aiService.breakdownTask(taskName, useAi: useAi);
-  }
-
-  String getWeeklyInsight(Map<String, dynamic> stats) {
-    return _aiService.getWeeklyInsight(stats);
   }
 
   Future<void> clearConversation() async {
@@ -223,6 +290,13 @@ class ChatController extends GetxController {
     try {
       final db = await DatabaseHelper.instance.database;
       await db.delete('chat_messages');
+    } catch (_) {}
+    // Clearing the conversation also forgets the coach's memory of it —
+    // "clear" must mean clear, per the privacy promise.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_memoryKey);
+      await prefs.remove(_memoryCounterKey);
     } catch (_) {}
   }
 

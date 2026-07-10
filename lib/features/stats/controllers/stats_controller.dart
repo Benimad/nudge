@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
-import '../../ai_coach/controllers/chat_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../ai_coach/services/ai_service.dart';
 import '../../habits/models/habit_model.dart';
 import '../../habits/repositories/habit_repository.dart';
 import '../../../core/database/database_helper.dart';
@@ -196,10 +197,33 @@ class StatsController extends GetxController {
       'improvement': _weekOverWeekImprovement(),
       if (moodNote != null) 'mood_note': moodNote,
     };
+
+    // Template insight first — instant, always available.
+    final coach = AiCoachService();
+    aiInsight.value = coach.getWeeklyInsight(stats);
+
+    // Then upgrade to a model-written one when live AI is available. Cached
+    // per day + per stats snapshot so this costs at most one call a day, and
+    // failures silently keep the template.
     try {
-      aiInsight.value = Get.find<ChatController>().getWeeklyInsight(stats);
+      final prefs = await SharedPreferences.getInstance();
+      final offline = prefs.getBool('offline_mode') ?? false;
+      if (offline || !coach.isLiveAi) return;
+      final sig = '${_dateOnly(now)}|${(weekCompletion.value * 100).round()}|'
+          '${bestStreak.value}|${totalWins.value}';
+      if (prefs.getString('weekly_insight_sig') == sig) {
+        final cached = prefs.getString('weekly_insight_text');
+        if (cached != null && cached.isNotEmpty) {
+          aiInsight.value = cached;
+          return;
+        }
+      }
+      final text = await coach.generateWeeklyInsight(stats);
+      aiInsight.value = text;
+      await prefs.setString('weekly_insight_sig', sig);
+      await prefs.setString('weekly_insight_text', text);
     } catch (_) {
-      aiInsight.value = '';
+      // Keep the template insight.
     }
   }
 
