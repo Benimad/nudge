@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -10,9 +12,15 @@ import 'package:nudge/core/database/database_helper.dart';
 /// devices. Runs in its own file because DatabaseHelper is a process-wide
 /// singleton and this test must own the very first open.
 void main() {
-  setUpAll(() {
+  setUpAll(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+    // Test files run concurrently and share the default databases directory —
+    // habit_repository_test.dart uses the same nudge.db filename, and this
+    // test deletes/recreates that file. Point this isolate at its own temp
+    // directory so the two suites can never race.
+    final dir = await Directory.systemTemp.createTemp('nudge_migration_test_');
+    await databaseFactory.setDatabasesPath(dir.path);
   });
 
   test('v1 database without moods table upgrades cleanly', () async {
