@@ -4,7 +4,11 @@ Everything the Play Console asks for, pre-written in the product's shame-free
 voice. Tune freely; keep the tone.
 
 ## App title (30 chars max)
-`Nudge: ADHD Habit Tracker`
+`Nudge: Habit Tracker & Focus`
+
+(Personal developer accounts cannot publish health-category apps — see the
+Category section. Keep "ADHD" out of the TITLE; the description may describe
+the audience.)
 
 ## Short description (80 chars max)
 `Gentle habits for real brains. No red badges, no shame — just tiny wins.`
@@ -49,7 +53,14 @@ Start with one tiny habit. That's the whole method.
 ---
 
 ## Category
-Health & Fitness (or Productivity)
+Productivity — NOT Health & Fitness.
+
+Google requires organization accounts for health-category apps (policy since
+Aug 2024). Nudge is a habit tracker / focus tool, provides no medical advice,
+diagnosis, or treatment, so it is honestly declared as:
+- Category: Productivity
+- App content → Health apps: "My app does not have any health features"
+- Content rating: "No" to all medical/diagnostic questions
 
 (Do NOT paste keyword lists anywhere in the listing — Play flags them.)
 
